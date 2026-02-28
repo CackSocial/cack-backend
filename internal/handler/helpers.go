@@ -2,11 +2,13 @@ package handler
 
 import (
 	"errors"
+	"log/slog"
 	"net/http"
 
 	"github.com/CackSocial/cack-backend/internal/dto"
-	"github.com/CackSocial/cack-backend/pkg/response"
+	"github.com/CackSocial/cack-backend/internal/infrastructure/storage"
 	ucerrors "github.com/CackSocial/cack-backend/internal/usecase/errors"
+	"github.com/CackSocial/cack-backend/pkg/response"
 	"github.com/gin-gonic/gin"
 )
 
@@ -43,7 +45,14 @@ func handleError(c *gin.Context, err error) {
 		response.Error(c, http.StatusConflict, err.Error())
 	case errors.Is(err, ucerrors.ErrSelfFollow), errors.Is(err, ucerrors.ErrAlreadyFollowing), errors.Is(err, ucerrors.ErrAlreadyLiked):
 		response.Error(c, http.StatusBadRequest, err.Error())
+	case errors.Is(err, storage.ErrFileTooLarge), errors.Is(err, storage.ErrInvalidFileType):
+		response.Error(c, http.StatusBadRequest, err.Error())
 	default:
+		slog.Error("internal server error",
+			"error", err,
+			"method", c.Request.Method,
+			"path", c.Request.URL.Path,
+		)
 		response.Error(c, http.StatusInternalServerError, "internal server error")
 	}
 }

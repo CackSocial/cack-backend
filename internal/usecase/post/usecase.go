@@ -69,6 +69,9 @@ func (uc *PostUseCase) Create(userID string, req *dto.CreatePostRequest) (*dto.P
 	for _, name := range tagNames {
 		tag, err := uc.tagRepo.FindOrCreate(name)
 		if err != nil {
+			if imageURL != "" {
+				_ = uc.storage.Delete(imageURL)
+			}
 			return nil, err
 		}
 		tags = append(tags, *tag)
@@ -82,6 +85,9 @@ func (uc *PostUseCase) Create(userID string, req *dto.CreatePostRequest) (*dto.P
 	}
 
 	if err := uc.postRepo.Create(post); err != nil {
+		if imageURL != "" {
+			_ = uc.storage.Delete(imageURL)
+		}
 		return nil, err
 	}
 
