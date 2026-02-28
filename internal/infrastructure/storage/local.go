@@ -7,6 +7,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 
 	"github.com/google/uuid"
@@ -28,13 +29,14 @@ var (
 
 type localStorage struct {
 	uploadPath string
+	baseURL    string
 }
 
-func NewLocalStorage(uploadPath string) Storage {
+func NewLocalStorage(uploadPath, baseURL string) Storage {
 	if err := os.MkdirAll(uploadPath, os.ModePerm); err != nil {
 		panic(fmt.Sprintf("failed to create upload directory: %v", err))
 	}
-	return &localStorage{uploadPath: uploadPath}
+	return &localStorage{uploadPath: uploadPath, baseURL: baseURL}
 }
 
 func (s *localStorage) Upload(file *multipart.FileHeader) (string, error) {
@@ -77,11 +79,11 @@ func (s *localStorage) Upload(file *multipart.FileHeader) (string, error) {
 		return "", fmt.Errorf("failed to copy file: %w", err)
 	}
 
-	return "/uploads/" + filename, nil
+	return s.baseURL + "/uploads/" + filename, nil
 }
 
 func (s *localStorage) Delete(filePath string) error {
-	fullPath := filepath.Join(s.uploadPath, filepath.Base(filePath))
+	fullPath := filepath.Join(s.uploadPath, path.Base(filePath))
 	if err := os.Remove(fullPath); err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("failed to delete file: %w", err)
 	}

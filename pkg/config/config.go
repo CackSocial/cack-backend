@@ -18,8 +18,9 @@ type Config struct {
 	DBSSLMode      string
 	JWTSecret      string
 	JWTExpiryHours int
-	UploadPath     string
+	UploadPath      string
 	MaxUploadSizeMB int
+	BaseURL         string
 }
 
 func LoadConfig() *Config {
@@ -37,6 +38,7 @@ func LoadConfig() *Config {
 		JWTExpiryHours:  getEnvAsInt("JWT_EXPIRY_HOURS", 72),
 		UploadPath:      getEnv("UPLOAD_PATH", "./uploads"),
 		MaxUploadSizeMB: getEnvAsInt("MAX_UPLOAD_SIZE_MB", 10),
+		BaseURL:         getEnv("BASE_URL", "http://localhost:8080"),
 	}
 }
 

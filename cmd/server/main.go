@@ -58,7 +58,7 @@ func main() {
 	messageRepo := repository.NewMessageRepository(db)
 
 	// Initialize storage
-	localStorage := storage.NewLocalStorage(cfg.UploadPath)
+	localStorage := storage.NewLocalStorage(cfg.UploadPath, cfg.BaseURL)
 
 	// Initialize use cases
 	userUseCase := userUC.NewUserUseCase(userRepo, followRepo, cfg.JWTSecret, cfg.JWTExpiryHours)

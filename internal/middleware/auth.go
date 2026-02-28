@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"log/slog"
 	"net/http"
 	"strings"
 
@@ -27,6 +28,11 @@ func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
 
 		token, err := auth.ValidateToken(parts[1], jwtSecret)
 		if err != nil || !token.Valid {
+			slog.Warn("auth: invalid or expired token",
+				"error", err,
+				"ip", c.ClientIP(),
+				"path", c.Request.URL.Path,
+			)
 			response.Error(c, http.StatusUnauthorized, "invalid or expired token")
 			c.Abort()
 			return
@@ -34,6 +40,11 @@ func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
 
 		userID, err := auth.ExtractUserID(token)
 		if err != nil {
+			slog.Warn("auth: invalid token claims",
+				"error", err,
+				"ip", c.ClientIP(),
+				"path", c.Request.URL.Path,
+			)
 			response.Error(c, http.StatusUnauthorized, "invalid token claims")
 			c.Abort()
 			return
