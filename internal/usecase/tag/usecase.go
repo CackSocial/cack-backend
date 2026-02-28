@@ -12,10 +12,11 @@ import (
 // TagUseCase encapsulates all tag-related business logic including
 // trending tag retrieval and fetching posts by tag name.
 type TagUseCase struct {
-	tagRepo     repository.TagRepository
-	postRepo    repository.PostRepository
-	likeRepo    repository.LikeRepository
-	commentRepo repository.CommentRepository
+	tagRepo      repository.TagRepository
+	postRepo     repository.PostRepository
+	likeRepo     repository.LikeRepository
+	commentRepo  repository.CommentRepository
+	bookmarkRepo repository.BookmarkRepository
 }
 
 // NewTagUseCase creates a new TagUseCase with the given dependencies.
@@ -24,12 +25,14 @@ func NewTagUseCase(
 	postRepo repository.PostRepository,
 	likeRepo repository.LikeRepository,
 	commentRepo repository.CommentRepository,
+	bookmarkRepo repository.BookmarkRepository,
 ) *TagUseCase {
 	return &TagUseCase{
-		tagRepo:     tagRepo,
-		postRepo:    postRepo,
-		likeRepo:    likeRepo,
-		commentRepo: commentRepo,
+		tagRepo:      tagRepo,
+		postRepo:     postRepo,
+		likeRepo:     likeRepo,
+		commentRepo:  commentRepo,
+		bookmarkRepo: bookmarkRepo,
 	}
 }
 
@@ -61,6 +64,11 @@ func (uc *TagUseCase) GetPostsByTag(tagName string, currentUserID string, page, 
 			isLiked, _ = uc.likeRepo.IsLiked(currentUserID, p.ID)
 		}
 
+		var isBookmarked bool
+		if currentUserID != "" {
+			isBookmarked, _ = uc.bookmarkRepo.IsBookmarked(currentUserID, p.ID)
+		}
+
 		tagNames := make([]string, 0, len(p.Tags))
 		for _, t := range p.Tags {
 			tagNames = append(tagNames, t.Name)
@@ -81,6 +89,7 @@ func (uc *TagUseCase) GetPostsByTag(tagName string, currentUserID string, page, 
 			LikeCount:    likeCount,
 			CommentCount: commentCount,
 			IsLiked:      isLiked,
+			IsBookmarked: isBookmarked,
 			CreatedAt:    p.CreatedAt,
 		})
 	}

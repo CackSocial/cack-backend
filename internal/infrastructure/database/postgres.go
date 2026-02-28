@@ -26,6 +26,7 @@ func NewPostgresDB(cfg *config.Config) *gorm.DB {
 		&domain.Like{},
 		&domain.Comment{},
 		&domain.Message{},
+		&domain.Bookmark{},
 	)
 	if err != nil {
 		log.Fatalf("Failed to auto-migrate: %v", err)

@@ -24,7 +24,7 @@ Domain → Repository (interfaces) → Use Cases (business logic) → Handlers (
 | Use cases | `internal/usecase/{feature}/usecase.go` | Business logic, depends on repo interfaces |
 | Handlers | `internal/handler/` | Gin HTTP handlers, depends on use cases |
 | WebSocket | `internal/handler/ws/` | Hub + handler for real-time DMs |
-| Middleware | `internal/middleware/` | Auth (required + optional), CORS, Prometheus metrics |
+| Middleware | `internal/middleware/` | Auth (required + optional), CORS |
 | Shared packages | `pkg/` | Config, JWT utils, bcrypt, response helpers |
 
 ## Key Patterns
@@ -69,9 +69,9 @@ UUIDs for primary keys (User, Post, Comment, Message). Auto-generated via `gen_r
 
 ## DevOps
 
-- **Docker Compose:** app, postgres, nginx (reverse proxy), prometheus, grafana
+- **Docker Compose:** app, postgres, nginx (reverse proxy)
 - **CI/CD:** `.github/workflows/ci.yml` — lint → test → build
-- **Monitoring:** Prometheus metrics at `/metrics`, Grafana at `:3000`
+
 - **Makefile targets:** run, build, test, lint, swagger, docker-up, docker-down
 
 ## Adding a New Feature — Checklist

@@ -115,6 +115,17 @@ func (m *mockCommentRepo) GetByPostID(postID string, page, limit int) ([]domain.
 func (m *mockCommentRepo) Delete(id string) error                  { return nil }
 func (m *mockCommentRepo) CountByPostID(postID string) (int64, error) { return 0, nil }
 
+// --- Mock BookmarkRepository ---
+
+type mockBookmarkRepo struct{}
+
+func (m *mockBookmarkRepo) Create(bookmark *domain.Bookmark) error              { return nil }
+func (m *mockBookmarkRepo) Delete(userID, postID string) error                  { return nil }
+func (m *mockBookmarkRepo) GetByUserID(userID string, page, limit int) ([]domain.Bookmark, int64, error) {
+	return nil, 0, nil
+}
+func (m *mockBookmarkRepo) IsBookmarked(userID, postID string) (bool, error) { return false, nil }
+
 // --- Mock UserRepository ---
 
 type mockUserRepo struct {
@@ -156,6 +167,11 @@ func (m *mockUserRepo) Search(query string, page, limit int) ([]domain.User, int
 	return nil, 0, nil
 }
 
+func (m *mockUserRepo) Delete(id string) error {
+	delete(m.users, id)
+	return nil
+}
+
 // --- Mock Storage ---
 
 type mockStorage struct{}
@@ -190,7 +206,7 @@ func TestParseHashtags_ViaCreate(t *testing.T) {
 		Username: "testuser",
 	}
 
-	uc := NewPostUseCase(postRepo, tagRepo, &mockLikeRepo{}, &mockCommentRepo{}, userRepo, &mockStorage{})
+	uc := NewPostUseCase(postRepo, tagRepo, &mockLikeRepo{}, &mockCommentRepo{}, userRepo, &mockBookmarkRepo{}, &mockStorage{})
 
 	resp, err := uc.Create("user-1", &dto.CreatePostRequest{
 		Content: "Hello #world #golang #world",
@@ -223,7 +239,7 @@ func TestCreate_TextOnly(t *testing.T) {
 		Username: "testuser",
 	}
 
-	uc := NewPostUseCase(postRepo, tagRepo, &mockLikeRepo{}, &mockCommentRepo{}, userRepo, &mockStorage{})
+	uc := NewPostUseCase(postRepo, tagRepo, &mockLikeRepo{}, &mockCommentRepo{}, userRepo, &mockBookmarkRepo{}, &mockStorage{})
 
 	resp, err := uc.Create("user-1", &dto.CreatePostRequest{
 		Content: "Just a simple post without hashtags",
@@ -255,7 +271,7 @@ func TestCreate_WithHashtags(t *testing.T) {
 		Username: "testuser",
 	}
 
-	uc := NewPostUseCase(postRepo, tagRepo, &mockLikeRepo{}, &mockCommentRepo{}, userRepo, &mockStorage{})
+	uc := NewPostUseCase(postRepo, tagRepo, &mockLikeRepo{}, &mockCommentRepo{}, userRepo, &mockBookmarkRepo{}, &mockStorage{})
 
 	resp, err := uc.Create("user-1", &dto.CreatePostRequest{
 		Content: "Check out #Go and #Programming",
@@ -275,7 +291,7 @@ func TestDelete_OwnPost(t *testing.T) {
 
 	userRepo.users["user-1"] = &domain.User{ID: "user-1", Username: "testuser"}
 
-	uc := NewPostUseCase(postRepo, tagRepo, &mockLikeRepo{}, &mockCommentRepo{}, userRepo, &mockStorage{})
+	uc := NewPostUseCase(postRepo, tagRepo, &mockLikeRepo{}, &mockCommentRepo{}, userRepo, &mockBookmarkRepo{}, &mockStorage{})
 
 	postRepo.posts["post-1"] = &domain.Post{
 		ID:     "post-1",
@@ -300,7 +316,7 @@ func TestDelete_OtherUserPost_Unauthorized(t *testing.T) {
 	userRepo.users["user-1"] = &domain.User{ID: "user-1", Username: "testuser"}
 	userRepo.users["user-2"] = &domain.User{ID: "user-2", Username: "otheruser"}
 
-	uc := NewPostUseCase(postRepo, tagRepo, &mockLikeRepo{}, &mockCommentRepo{}, userRepo, &mockStorage{})
+	uc := NewPostUseCase(postRepo, tagRepo, &mockLikeRepo{}, &mockCommentRepo{}, userRepo, &mockBookmarkRepo{}, &mockStorage{})
 
 	postRepo.posts["post-1"] = &domain.Post{
 		ID:     "post-1",

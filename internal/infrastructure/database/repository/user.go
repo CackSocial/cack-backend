@@ -40,6 +40,42 @@ func (r *userRepository) Update(user *domain.User) error {
 	return r.db.Save(user).Error
 }
 
+func (r *userRepository) Delete(id string) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		// Delete messages where user is sender or receiver
+		if err := tx.Where("sender_id = ? OR receiver_id = ?", id, id).Delete(&domain.Message{}).Error; err != nil {
+			return err
+		}
+		// Delete bookmarks
+		if err := tx.Where("user_id = ?", id).Delete(&domain.Bookmark{}).Error; err != nil {
+			return err
+		}
+		// Delete likes
+		if err := tx.Where("user_id = ?", id).Delete(&domain.Like{}).Error; err != nil {
+			return err
+		}
+		// Delete comments
+		if err := tx.Where("user_id = ?", id).Delete(&domain.Comment{}).Error; err != nil {
+			return err
+		}
+		// Delete post_tags associations and posts
+		var postIDs []string
+		tx.Model(&domain.Post{}).Where("user_id = ?", id).Pluck("id", &postIDs)
+		for _, pid := range postIDs {
+			tx.Model(&domain.Post{ID: pid}).Association("Tags").Clear()
+		}
+		if err := tx.Where("user_id = ?", id).Delete(&domain.Post{}).Error; err != nil {
+			return err
+		}
+		// Delete follows
+		if err := tx.Where("follower_id = ? OR following_id = ?", id, id).Delete(&domain.Follow{}).Error; err != nil {
+			return err
+		}
+		// Delete user
+		return tx.Where("id = ?", id).Delete(&domain.User{}).Error
+	})
+}
+
 func (r *userRepository) Search(query string, page, limit int) ([]domain.User, int64, error) {
 	var users []domain.User
 	var total int64

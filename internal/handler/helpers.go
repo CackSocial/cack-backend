@@ -43,7 +43,7 @@ func handleError(c *gin.Context, err error) {
 		response.Error(c, http.StatusUnauthorized, err.Error())
 	case errors.Is(err, ucerrors.ErrUsernameTaken):
 		response.Error(c, http.StatusConflict, err.Error())
-	case errors.Is(err, ucerrors.ErrSelfFollow), errors.Is(err, ucerrors.ErrAlreadyFollowing), errors.Is(err, ucerrors.ErrAlreadyLiked):
+	case errors.Is(err, ucerrors.ErrSelfFollow), errors.Is(err, ucerrors.ErrAlreadyFollowing), errors.Is(err, ucerrors.ErrAlreadyLiked), errors.Is(err, ucerrors.ErrAlreadyBookmarked):
 		response.Error(c, http.StatusBadRequest, err.Error())
 	case errors.Is(err, storage.ErrFileTooLarge), errors.Is(err, storage.ErrInvalidFileType):
 		response.Error(c, http.StatusBadRequest, err.Error())

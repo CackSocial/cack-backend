@@ -31,3 +31,7 @@ type UpdateProfileRequest struct {
 	DisplayName *string `json:"display_name" binding:"omitempty,max=100"`
 	Bio         *string `json:"bio" binding:"omitempty,max=500"`
 }
+
+type DeleteAccountRequest struct {
+	Password string `json:"password" binding:"required"`
+}

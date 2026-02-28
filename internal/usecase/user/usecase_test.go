@@ -54,6 +54,11 @@ func (m *mockUserRepo) Search(query string, page, limit int) ([]domain.User, int
 	return nil, 0, nil
 }
 
+func (m *mockUserRepo) Delete(id string) error {
+	delete(m.users, id)
+	return nil
+}
+
 // --- Mock FollowRepository ---
 
 type mockFollowRepo struct {

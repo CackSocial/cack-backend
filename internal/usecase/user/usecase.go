@@ -176,3 +176,18 @@ func (uc *UserUseCase) UpdateProfile(userID string, req *dto.UpdateProfileReques
 		IsFollowing:    false,
 	}, nil
 }
+
+// DeleteAccount permanently deletes a user account and all associated data
+// after verifying the user's password.
+func (uc *UserUseCase) DeleteAccount(userID string, password string) error {
+	user, err := uc.userRepo.GetByID(userID)
+	if err != nil || user == nil {
+		return ucerrors.ErrUserNotFound
+	}
+
+	if !hash.CheckPassword(password, user.Password) {
+		return ucerrors.ErrInvalidCredentials
+	}
+
+	return uc.userRepo.Delete(userID)
+}

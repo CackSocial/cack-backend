@@ -35,3 +35,8 @@ var (
 var (
 	ErrCommentNotFound = errors.New("comment not found")
 )
+
+// Bookmark-related errors.
+var (
+	ErrAlreadyBookmarked = errors.New("already bookmarked this post")
+)

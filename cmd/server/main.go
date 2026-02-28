@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 
@@ -24,6 +23,7 @@ import (
 	tagUC "github.com/CackSocial/cack-backend/internal/usecase/tag"
 	timelineUC "github.com/CackSocial/cack-backend/internal/usecase/timeline"
 	userUC "github.com/CackSocial/cack-backend/internal/usecase/user"
+	bookmarkUC "github.com/CackSocial/cack-backend/internal/usecase/bookmark"
 	"github.com/CackSocial/cack-backend/pkg/config"
 )
 
@@ -56,19 +56,21 @@ func main() {
 	likeRepo := repository.NewLikeRepository(db)
 	commentRepo := repository.NewCommentRepository(db)
 	messageRepo := repository.NewMessageRepository(db)
+	bookmarkRepo := repository.NewBookmarkRepository(db)
 
 	// Initialize storage
 	localStorage := storage.NewLocalStorage(cfg.UploadPath, cfg.BaseURL)
 
 	// Initialize use cases
 	userUseCase := userUC.NewUserUseCase(userRepo, followRepo, cfg.JWTSecret, cfg.JWTExpiryHours)
-	postUseCase := postUC.NewPostUseCase(postRepo, tagRepo, likeRepo, commentRepo, userRepo, localStorage)
+	postUseCase := postUC.NewPostUseCase(postRepo, tagRepo, likeRepo, commentRepo, userRepo, bookmarkRepo, localStorage)
 	followUseCase := followUC.NewFollowUseCase(followRepo, userRepo)
-	timelineUseCase := timelineUC.NewTimelineUseCase(followRepo, postRepo, likeRepo, commentRepo)
+	timelineUseCase := timelineUC.NewTimelineUseCase(followRepo, postRepo, likeRepo, commentRepo, bookmarkRepo)
 	likeUseCase := likeUC.NewLikeUseCase(likeRepo, postRepo, userRepo)
 	commentUseCase := commentUC.NewCommentUseCase(commentRepo, postRepo)
 	messageUseCase := messageUC.NewMessageUseCase(messageRepo, userRepo, localStorage)
-	tagUseCase := tagUC.NewTagUseCase(tagRepo, postRepo, likeRepo, commentRepo)
+	tagUseCase := tagUC.NewTagUseCase(tagRepo, postRepo, likeRepo, commentRepo, bookmarkRepo)
+	bookmarkUseCase := bookmarkUC.NewBookmarkUseCase(bookmarkRepo, postRepo, likeRepo, commentRepo, userRepo)
 
 	// Initialize WebSocket hub and start it
 	hub := ws.NewHub(messageUseCase)
@@ -83,16 +85,12 @@ func main() {
 	commentHandler := handler.NewCommentHandler(commentUseCase)
 	messageHandler := handler.NewMessageHandler(messageUseCase)
 	tagHandler := handler.NewTagHandler(tagUseCase)
+	bookmarkHandler := handler.NewBookmarkHandler(bookmarkUseCase)
 	wsHandler := ws.NewWSHandler(hub, cfg.JWTSecret)
 
 	// Setup Gin router
 	router := gin.Default()
 	router.Use(middleware.CORSMiddleware())
-	router.Use(middleware.MetricsMiddleware())
-
-	// Prometheus metrics endpoint
-	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
-
 	// Static file serving
 	router.Static("/uploads", cfg.UploadPath)
 
@@ -113,6 +111,7 @@ func main() {
 	commentHandler.RegisterRoutes(public, protected)
 	messageHandler.RegisterRoutes(protected)
 	tagHandler.RegisterRoutes(public, optionalAuth)
+	bookmarkHandler.RegisterRoutes(protected)
 	wsHandler.RegisterRoutes(router)
 
 	// Swagger documentation

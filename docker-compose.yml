@@ -42,28 +42,5 @@ services:
       - ./uploads:/app/uploads:ro
     restart: unless-stopped
 
-  prometheus:
-    image: prom/prometheus:latest
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-    restart: unless-stopped
-
-  grafana:
-    image: grafana/grafana:latest
-    depends_on:
-      - prometheus
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./grafana/provisioning:/etc/grafana/provisioning:ro
-      - grafana_data:/var/lib/grafana
-    environment:
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: admin
-    restart: unless-stopped
-
 volumes:
   postgres_data:
-  grafana_data:

@@ -18,12 +18,13 @@ var hashtagRegex = regexp.MustCompile(`#(\w+)`)
 // PostUseCase encapsulates all post-related business logic including
 // creation with image upload, hashtag parsing, retrieval, and deletion.
 type PostUseCase struct {
-	postRepo    repository.PostRepository
-	tagRepo     repository.TagRepository
-	likeRepo    repository.LikeRepository
-	commentRepo repository.CommentRepository
-	userRepo    repository.UserRepository
-	storage     storage.Storage
+	postRepo     repository.PostRepository
+	tagRepo      repository.TagRepository
+	likeRepo     repository.LikeRepository
+	commentRepo  repository.CommentRepository
+	userRepo     repository.UserRepository
+	bookmarkRepo repository.BookmarkRepository
+	storage      storage.Storage
 }
 
 // NewPostUseCase creates a new PostUseCase with the given dependencies.
@@ -33,15 +34,17 @@ func NewPostUseCase(
 	likeRepo repository.LikeRepository,
 	commentRepo repository.CommentRepository,
 	userRepo repository.UserRepository,
+	bookmarkRepo repository.BookmarkRepository,
 	storage storage.Storage,
 ) *PostUseCase {
 	return &PostUseCase{
-		postRepo:    postRepo,
-		tagRepo:     tagRepo,
-		likeRepo:    likeRepo,
-		commentRepo: commentRepo,
-		userRepo:    userRepo,
-		storage:     storage,
+		postRepo:     postRepo,
+		tagRepo:      tagRepo,
+		likeRepo:     likeRepo,
+		commentRepo:  commentRepo,
+		userRepo:     userRepo,
+		bookmarkRepo: bookmarkRepo,
+		storage:      storage,
 	}
 }
 
@@ -166,6 +169,11 @@ func (uc *PostUseCase) toPostResponse(post *domain.Post, currentUserID string) (
 		isLiked, _ = uc.likeRepo.IsLiked(currentUserID, post.ID)
 	}
 
+	var isBookmarked bool
+	if currentUserID != "" {
+		isBookmarked, _ = uc.bookmarkRepo.IsBookmarked(currentUserID, post.ID)
+	}
+
 	tagNames := make([]string, 0, len(post.Tags))
 	for _, t := range post.Tags {
 		tagNames = append(tagNames, t.Name)
@@ -186,6 +194,7 @@ func (uc *PostUseCase) toPostResponse(post *domain.Post, currentUserID string) (
 		LikeCount:    likeCount,
 		CommentCount: commentCount,
 		IsLiked:      isLiked,
+		IsBookmarked: isBookmarked,
 		CreatedAt:    post.CreatedAt,
 	}, nil
 }

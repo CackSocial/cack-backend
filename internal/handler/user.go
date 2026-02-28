@@ -23,6 +23,7 @@ func (h *UserHandler) RegisterRoutes(public, protected *gin.RouterGroup, optiona
 	public.GET("/users/:username", optionalAuth, h.GetProfile)
 
 	protected.PUT("/users/me", h.UpdateProfile)
+	protected.DELETE("/users/me", h.DeleteAccount)
 }
 
 // Register godoc
@@ -128,4 +129,32 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 	}
 
 	response.Success(c, http.StatusOK, profile)
+}
+
+// DeleteAccount godoc
+// @Summary Delete user account
+// @Description Permanently delete the authenticated user's account and all associated data
+// @Tags Users
+// @Accept json
+// @Produce json
+// @Param body body dto.DeleteAccountRequest true "Password confirmation"
+// @Success 204
+// @Failure 400 {object} response.APIResponse
+// @Failure 401 {object} response.APIResponse
+// @Security BearerAuth
+// @Router /users/me [delete]
+func (h *UserHandler) DeleteAccount(c *gin.Context) {
+	var req dto.DeleteAccountRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	userID := getUserID(c)
+	if err := h.userUseCase.DeleteAccount(userID, req.Password); err != nil {
+		handleError(c, err)
+		return
+	}
+
+	c.Status(http.StatusNoContent)
 }

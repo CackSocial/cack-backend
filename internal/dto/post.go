@@ -19,5 +19,6 @@ type PostResponse struct {
 	LikeCount    int64       `json:"like_count"`
 	CommentCount int64       `json:"comment_count"`
 	IsLiked      bool        `json:"is_liked"`
+	IsBookmarked bool        `json:"is_bookmarked"`
 	CreatedAt    time.Time   `json:"created_at"`
 }

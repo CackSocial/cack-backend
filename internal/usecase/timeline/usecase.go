@@ -10,10 +10,11 @@ import (
 // TimelineUseCase encapsulates the business logic for building the
 // authenticated user's chronological feed.
 type TimelineUseCase struct {
-	followRepo  repository.FollowRepository
-	postRepo    repository.PostRepository
-	likeRepo    repository.LikeRepository
-	commentRepo repository.CommentRepository
+	followRepo   repository.FollowRepository
+	postRepo     repository.PostRepository
+	likeRepo     repository.LikeRepository
+	commentRepo  repository.CommentRepository
+	bookmarkRepo repository.BookmarkRepository
 }
 
 // NewTimelineUseCase creates a new TimelineUseCase with the given dependencies.
@@ -22,12 +23,14 @@ func NewTimelineUseCase(
 	postRepo repository.PostRepository,
 	likeRepo repository.LikeRepository,
 	commentRepo repository.CommentRepository,
+	bookmarkRepo repository.BookmarkRepository,
 ) *TimelineUseCase {
 	return &TimelineUseCase{
-		followRepo:  followRepo,
-		postRepo:    postRepo,
-		likeRepo:    likeRepo,
-		commentRepo: commentRepo,
+		followRepo:   followRepo,
+		postRepo:     postRepo,
+		likeRepo:     likeRepo,
+		commentRepo:  commentRepo,
+		bookmarkRepo: bookmarkRepo,
 	}
 }
 
@@ -56,6 +59,7 @@ func (uc *TimelineUseCase) GetFeed(userID string, page, limit int) ([]dto.PostRe
 		likeCount, _ := uc.likeRepo.CountByPostID(p.ID)
 		commentCount, _ := uc.commentRepo.CountByPostID(p.ID)
 		isLiked, _ := uc.likeRepo.IsLiked(userID, p.ID)
+		isBookmarked, _ := uc.bookmarkRepo.IsBookmarked(userID, p.ID)
 
 		tagNames := make([]string, 0, len(p.Tags))
 		for _, t := range p.Tags {
@@ -77,6 +81,7 @@ func (uc *TimelineUseCase) GetFeed(userID string, page, limit int) ([]dto.PostRe
 			LikeCount:    likeCount,
 			CommentCount: commentCount,
 			IsLiked:      isLiked,
+			IsBookmarked: isBookmarked,
 			CreatedAt:    p.CreatedAt,
 		})
 	}
