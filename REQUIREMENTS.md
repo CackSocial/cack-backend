@@ -20,6 +20,7 @@ There are 3 main repositories for this project:
 - PostgreSQL
 - Docker for containerization
 - RESTful API for communication between frontend and backend
+- WebSockets for DMs
 - JWT for authentication and authorization
 - GORM for ORM (Object-Relational Mapping)
 - Github Actions for CI/CD

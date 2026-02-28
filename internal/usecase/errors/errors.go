@@ -1,0 +1,37 @@
+// Package errors defines domain errors used across the usecase layer.
+package errors
+
+import "errors"
+
+// Authentication and authorization errors.
+var (
+	ErrInvalidCredentials = errors.New("invalid credentials")
+	ErrUnauthorized       = errors.New("unauthorized")
+)
+
+// User-related errors.
+var (
+	ErrUsernameTaken = errors.New("username already taken")
+	ErrUserNotFound  = errors.New("user not found")
+)
+
+// Post-related errors.
+var (
+	ErrPostNotFound = errors.New("post not found")
+)
+
+// Follow-related errors.
+var (
+	ErrSelfFollow     = errors.New("cannot follow yourself")
+	ErrAlreadyFollowing = errors.New("already following this user")
+)
+
+// Like-related errors.
+var (
+	ErrAlreadyLiked = errors.New("already liked this post")
+)
+
+// Comment-related errors.
+var (
+	ErrCommentNotFound = errors.New("comment not found")
+)
