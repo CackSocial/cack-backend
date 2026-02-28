@@ -1,0 +1,919 @@
+{
+	"info": {
+		"name": "SocialConnect API",
+		"description": "Complete API collection for the SocialConnect social networking platform.\n\n**Setup:**\n1. Run \"Register\" or \"Login\" first — the token is auto-saved to the collection variable `token`.\n2. All protected endpoints use `{{token}}` automatically via Bearer auth.\n3. Dynamic variables like `{{postId}}`, `{{commentId}}`, `{{user2Token}}` are set by test scripts.\n\n**Test Flow:**\n1. Auth → Register User 1 → Register User 2\n2. Posts → Create Post → Get Post → Get User Posts\n3. Follows → Follow User → Get Followers → Timeline\n4. Likes → Like Post → Get Likes\n5. Comments → Create Comment → Get Comments → Delete Comment\n6. Messages → Send Message → Get Conversation → Get Conversations\n7. Tags → Trending Tags → Posts by Tag\n8. Cleanup → Delete Post → Unfollow",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{ "key": "baseUrl", "value": "http://localhost:8080/api/v1" },
+		{ "key": "token", "value": "" },
+		{ "key": "user2Token", "value": "" },
+		{ "key": "userId", "value": "" },
+		{ "key": "user2Id", "value": "" },
+		{ "key": "username", "value": "johndoe" },
+		{ "key": "user2Username", "value": "janedoe" },
+		{ "key": "postId", "value": "" },
+		{ "key": "commentId", "value": "" }
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [{ "key": "token", "value": "{{token}}" }]
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Register User 1",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const res = pm.response.json();",
+									"if (res.success) {",
+									"    pm.collectionVariables.set('token', res.data.token);",
+									"    pm.collectionVariables.set('userId', res.data.user.id);",
+									"    pm.test('Registration successful', () => pm.response.to.have.status(201));",
+									"    pm.test('Token received', () => pm.expect(res.data.token).to.be.a('string'));",
+									"    pm.test('Username matches', () => pm.expect(res.data.user.username).to.eql(pm.collectionVariables.get('username')));",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "POST",
+						"url": "{{baseUrl}}/auth/register",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"{{username}}\",\n    \"password\": \"password123\",\n    \"display_name\": \"John Doe\"\n}"
+						}
+					}
+				},
+				{
+					"name": "Register User 2",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const res = pm.response.json();",
+									"if (res.success) {",
+									"    pm.collectionVariables.set('user2Token', res.data.token);",
+									"    pm.collectionVariables.set('user2Id', res.data.user.id);",
+									"    pm.test('Registration successful', () => pm.response.to.have.status(201));",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "POST",
+						"url": "{{baseUrl}}/auth/register",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"{{user2Username}}\",\n    \"password\": \"password123\",\n    \"display_name\": \"Jane Doe\"\n}"
+						}
+					}
+				},
+				{
+					"name": "Login User 1",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const res = pm.response.json();",
+									"if (res.success) {",
+									"    pm.collectionVariables.set('token', res.data.token);",
+									"    pm.test('Login successful', () => pm.response.to.have.status(200));",
+									"    pm.test('Token received', () => pm.expect(res.data.token).to.be.a('string'));",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "POST",
+						"url": "{{baseUrl}}/auth/login",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"{{username}}\",\n    \"password\": \"password123\"\n}"
+						}
+					}
+				},
+				{
+					"name": "Login User 2",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const res = pm.response.json();",
+									"if (res.success) {",
+									"    pm.collectionVariables.set('user2Token', res.data.token);",
+									"    pm.test('Login successful', () => pm.response.to.have.status(200));",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "POST",
+						"url": "{{baseUrl}}/auth/login",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"{{user2Username}}\",\n    \"password\": \"password123\"\n}"
+						}
+					}
+				},
+				{
+					"name": "Login - Invalid Credentials",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Returns 401', () => pm.response.to.have.status(401));",
+									"pm.test('Error message', () => pm.expect(pm.response.json().success).to.be.false);"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "POST",
+						"url": "{{baseUrl}}/auth/login",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"{{username}}\",\n    \"password\": \"wrongpassword\"\n}"
+						}
+					}
+				},
+				{
+					"name": "Register - Duplicate Username",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Returns 409 Conflict', () => pm.response.to.have.status(409));"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "POST",
+						"url": "{{baseUrl}}/auth/register",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"{{username}}\",\n    \"password\": \"password123\",\n    \"display_name\": \"Duplicate\"\n}"
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Users",
+			"item": [
+				{
+					"name": "Get My Profile",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', () => pm.response.to.have.status(200));",
+									"const res = pm.response.json();",
+									"pm.test('Has username', () => pm.expect(res.data.username).to.eql(pm.collectionVariables.get('username')));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"url": "{{baseUrl}}/users/{{username}}"
+					}
+				},
+				{
+					"name": "Get User 2 Profile",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', () => pm.response.to.have.status(200));",
+									"pm.test('Correct user', () => pm.expect(pm.response.json().data.username).to.eql(pm.collectionVariables.get('user2Username')));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"url": "{{baseUrl}}/users/{{user2Username}}"
+					}
+				},
+				{
+					"name": "Update Profile",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', () => pm.response.to.have.status(200));",
+									"const res = pm.response.json();",
+									"pm.test('Display name updated', () => pm.expect(res.data.display_name).to.eql('John D.'));",
+									"pm.test('Bio updated', () => pm.expect(res.data.bio).to.eql('Hello, I am John!'));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"url": "{{baseUrl}}/users/me",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"display_name\": \"John D.\",\n    \"bio\": \"Hello, I am John!\"\n}"
+						}
+					}
+				},
+				{
+					"name": "Get Non-existent User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Returns 404', () => pm.response.to.have.status(404));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"url": "{{baseUrl}}/users/nonexistentuser999"
+					}
+				}
+			]
+		},
+		{
+			"name": "Posts",
+			"item": [
+				{
+					"name": "Create Post (Text Only)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const res = pm.response.json();",
+									"if (res.success) {",
+									"    pm.collectionVariables.set('postId', res.data.id);",
+									"    pm.test('Post created', () => pm.response.to.have.status(201));",
+									"    pm.test('Has content', () => pm.expect(res.data.content).to.include('Hello'));",
+									"    pm.test('Tags parsed', () => pm.expect(res.data.tags).to.include('golang'));",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"url": "{{baseUrl}}/posts",
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{ "key": "content", "value": "Hello SocialConnect! This is my first post. #golang #backend #socialconnect", "type": "text" }
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Post (With Image)",
+					"request": {
+						"method": "POST",
+						"url": "{{baseUrl}}/posts",
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{ "key": "content", "value": "Check out this photo! #photo #cool", "type": "text" },
+								{ "key": "image", "type": "file", "src": "" }
+							]
+						}
+					},
+					"description": "Select an image file in the 'image' field before sending."
+				},
+				{
+					"name": "Create Post as User 2",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Post created', () => pm.response.to.have.status(201));"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{user2Token}}" }]
+						},
+						"method": "POST",
+						"url": "{{baseUrl}}/posts",
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{ "key": "content", "value": "Hey everyone! I'm Jane. #introduction #socialconnect", "type": "text" }
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Post by ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', () => pm.response.to.have.status(200));",
+									"pm.test('Correct post', () => pm.expect(pm.response.json().data.id).to.eql(pm.collectionVariables.get('postId')));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"url": "{{baseUrl}}/posts/{{postId}}"
+					}
+				},
+				{
+					"name": "Get User's Posts",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', () => pm.response.to.have.status(200));",
+									"pm.test('Has posts', () => pm.expect(pm.response.json().data).to.be.an('array'));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/users/{{username}}/posts?page=1&limit=10",
+							"host": ["{{baseUrl}}"],
+							"path": ["users", "{{username}}", "posts"],
+							"query": [
+								{ "key": "page", "value": "1" },
+								{ "key": "limit", "value": "10" }
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete Post",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', () => pm.response.to.have.status(200));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"url": "{{baseUrl}}/posts/{{postId}}"
+					},
+					"description": "Run this last — deletes the post created earlier."
+				}
+			]
+		},
+		{
+			"name": "Follows",
+			"item": [
+				{
+					"name": "Follow User 2",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', () => pm.response.to.have.status(200));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"url": "{{baseUrl}}/users/{{user2Username}}/follow"
+					}
+				},
+				{
+					"name": "Follow Self (Should Fail)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Returns 400', () => pm.response.to.have.status(400));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"url": "{{baseUrl}}/users/{{username}}/follow"
+					}
+				},
+				{
+					"name": "Get Followers of User 2",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', () => pm.response.to.have.status(200));",
+									"pm.test('Has followers', () => pm.expect(pm.response.json().data.length).to.be.greaterThan(0));"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/users/{{user2Username}}/followers?page=1&limit=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["users", "{{user2Username}}", "followers"],
+							"query": [
+								{ "key": "page", "value": "1" },
+								{ "key": "limit", "value": "20" }
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Following of User 1",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', () => pm.response.to.have.status(200));",
+									"pm.test('Following user2', () => pm.expect(pm.response.json().data.length).to.be.greaterThan(0));"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/users/{{username}}/following?page=1&limit=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["users", "{{username}}", "following"],
+							"query": [
+								{ "key": "page", "value": "1" },
+								{ "key": "limit", "value": "20" }
+							]
+						}
+					}
+				},
+				{
+					"name": "Unfollow User 2",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', () => pm.response.to.have.status(200));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"url": "{{baseUrl}}/users/{{user2Username}}/follow"
+					}
+				}
+			]
+		},
+		{
+			"name": "Timeline",
+			"item": [
+				{
+					"name": "Get Timeline Feed",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', () => pm.response.to.have.status(200));",
+									"pm.test('Returns array', () => pm.expect(pm.response.json().data).to.be.an('array'));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/timeline?page=1&limit=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["timeline"],
+							"query": [
+								{ "key": "page", "value": "1" },
+								{ "key": "limit", "value": "20" }
+							]
+						}
+					},
+					"description": "Returns posts from followed users + your own posts. Follow User 2 first to see their posts."
+				}
+			]
+		},
+		{
+			"name": "Likes",
+			"item": [
+				{
+					"name": "Like Post",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', () => pm.response.to.have.status(200));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"url": "{{baseUrl}}/posts/{{postId}}/like"
+					}
+				},
+				{
+					"name": "Like Post Again (Should Fail)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Returns 400', () => pm.response.to.have.status(400));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"url": "{{baseUrl}}/posts/{{postId}}/like"
+					}
+				},
+				{
+					"name": "Get Post Likes",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', () => pm.response.to.have.status(200));",
+									"pm.test('Has likes', () => pm.expect(pm.response.json().data.length).to.be.greaterThan(0));"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/posts/{{postId}}/likes?page=1&limit=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["posts", "{{postId}}", "likes"],
+							"query": [
+								{ "key": "page", "value": "1" },
+								{ "key": "limit", "value": "20" }
+							]
+						}
+					}
+				},
+				{
+					"name": "Unlike Post",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', () => pm.response.to.have.status(200));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"url": "{{baseUrl}}/posts/{{postId}}/like"
+					}
+				}
+			]
+		},
+		{
+			"name": "Comments",
+			"item": [
+				{
+					"name": "Create Comment",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const res = pm.response.json();",
+									"if (res.success) {",
+									"    pm.collectionVariables.set('commentId', res.data.id);",
+									"    pm.test('Comment created', () => pm.response.to.have.status(201));",
+									"    pm.test('Content matches', () => pm.expect(res.data.content).to.eql('Great post!'));",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"url": "{{baseUrl}}/posts/{{postId}}/comments",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"content\": \"Great post!\"\n}"
+						}
+					}
+				},
+				{
+					"name": "Create Comment as User 2",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Comment created', () => pm.response.to.have.status(201));"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{user2Token}}" }]
+						},
+						"method": "POST",
+						"url": "{{baseUrl}}/posts/{{postId}}/comments",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"content\": \"Thanks for sharing!\"\n}"
+						}
+					}
+				},
+				{
+					"name": "Get Post Comments",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', () => pm.response.to.have.status(200));",
+									"pm.test('Has comments', () => pm.expect(pm.response.json().data.length).to.be.greaterThan(0));"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/posts/{{postId}}/comments?page=1&limit=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["posts", "{{postId}}", "comments"],
+							"query": [
+								{ "key": "page", "value": "1" },
+								{ "key": "limit", "value": "20" }
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete Comment",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', () => pm.response.to.have.status(200));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"url": "{{baseUrl}}/comments/{{commentId}}"
+					}
+				}
+			]
+		},
+		{
+			"name": "Messages",
+			"item": [
+				{
+					"name": "Send Message to User 2",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Message sent', () => pm.response.to.have.status(201));",
+									"pm.test('Content matches', () => pm.expect(pm.response.json().data.content).to.eql('Hey Jane! How are you?'));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"url": "{{baseUrl}}/messages/{{user2Username}}",
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{ "key": "content", "value": "Hey Jane! How are you?", "type": "text" }
+							]
+						}
+					}
+				},
+				{
+					"name": "Send Reply as User 2",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Message sent', () => pm.response.to.have.status(201));"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{ "key": "token", "value": "{{user2Token}}" }]
+						},
+						"method": "POST",
+						"url": "{{baseUrl}}/messages/{{username}}",
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{ "key": "content", "value": "Hi John! I'm doing great, thanks!", "type": "text" }
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Conversation with User 2",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', () => pm.response.to.have.status(200));",
+									"pm.test('Has messages', () => pm.expect(pm.response.json().data.length).to.be.greaterThan(0));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/messages/{{user2Username}}?page=1&limit=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["messages", "{{user2Username}}"],
+							"query": [
+								{ "key": "page", "value": "1" },
+								{ "key": "limit", "value": "20" }
+							]
+						}
+					}
+				},
+				{
+					"name": "Get All Conversations",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', () => pm.response.to.have.status(200));",
+									"pm.test('Has conversations', () => pm.expect(pm.response.json().data.length).to.be.greaterThan(0));"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/messages/conversations?page=1&limit=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["messages", "conversations"],
+							"query": [
+								{ "key": "page", "value": "1" },
+								{ "key": "limit", "value": "20" }
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Tags",
+			"item": [
+				{
+					"name": "Get Trending Tags",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', () => pm.response.to.have.status(200));",
+									"pm.test('Returns array', () => pm.expect(pm.response.json().data).to.be.an('array'));"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "GET",
+						"url": "{{baseUrl}}/tags/trending"
+					}
+				},
+				{
+					"name": "Get Posts by Tag",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status 200', () => pm.response.to.have.status(200));",
+									"pm.test('Returns array', () => pm.expect(pm.response.json().data).to.be.an('array'));"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "GET",
+						"url": {
+							"raw": "{{baseUrl}}/tags/socialconnect/posts?page=1&limit=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["tags", "socialconnect", "posts"],
+							"query": [
+								{ "key": "page", "value": "1" },
+								{ "key": "limit", "value": "20" }
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "WebSocket",
+			"item": [
+				{
+					"name": "WebSocket DM Connection",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "ws://localhost:8080/api/v1/ws?token={{token}}",
+							"protocol": "ws",
+							"host": ["localhost"],
+							"port": "8080",
+							"path": ["api", "v1", "ws"],
+							"query": [
+								{ "key": "token", "value": "{{token}}" }
+							]
+						},
+						"description": "WebSocket endpoint for real-time DMs.\n\n**To test in Postman:**\n1. Click 'Connect'\n2. Send a JSON message:\n```json\n{\n    \"type\": \"message\",\n    \"receiver_id\": \"{{user2Id}}\",\n    \"content\": \"Real-time hello!\"\n}\n```\n3. Messages will appear in both sender and receiver connections."
+					}
+				}
+			]
+		}
+	]
+}
