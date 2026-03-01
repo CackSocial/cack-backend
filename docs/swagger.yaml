@@ -1,0 +1,814 @@
+basePath: /api/v1
+definitions:
+  dto.CreateCommentRequest:
+    properties:
+      content:
+        maxLength: 2000
+        type: string
+    required:
+    - content
+    type: object
+  dto.LoginRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  dto.RegisterRequest:
+    properties:
+      display_name:
+        maxLength: 100
+        type: string
+      password:
+        maxLength: 100
+        minLength: 6
+        type: string
+      username:
+        maxLength: 50
+        minLength: 3
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  dto.UpdateProfileRequest:
+    properties:
+      bio:
+        maxLength: 500
+        type: string
+      display_name:
+        maxLength: 100
+        type: string
+    type: object
+  response.APIResponse:
+    properties:
+      data: {}
+      message:
+        type: string
+      success:
+        type: boolean
+    type: object
+  response.PaginatedResponse:
+    properties:
+      data: {}
+      limit:
+        type: integer
+      page:
+        type: integer
+      success:
+        type: boolean
+      total:
+        type: integer
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: Social networking platform API with posts, follows, messaging, and
+    more.
+  title: SocialConnect API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate a user and return a JWT token
+      parameters:
+      - description: Login request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Login user
+      tags:
+      - Auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Create a new user account with username, password, and optional
+        display name
+      parameters:
+      - description: Register request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Register a new user
+      tags:
+      - Auth
+  /comments/{id}:
+    delete:
+      description: Delete a comment by its ID (must be the author)
+      parameters:
+      - description: Comment ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a comment
+      tags:
+      - Comments
+  /messages/{username}:
+    get:
+      description: Get messages in a conversation with a specific user
+      parameters:
+      - description: Username
+        in: path
+        name: username
+        required: true
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Results per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.PaginatedResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get conversation with user
+      tags:
+      - Messages
+    post:
+      consumes:
+      - multipart/form-data
+      description: Send a message to another user with content and optional image
+      parameters:
+      - description: Recipient username
+        in: path
+        name: username
+        required: true
+        type: string
+      - description: Message content
+        in: formData
+        name: content
+        required: true
+        type: string
+      - description: Image file
+        in: formData
+        name: image
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Send a message
+      tags:
+      - Messages
+  /messages/conversations:
+    get:
+      description: Get all conversations for the authenticated user
+      parameters:
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Results per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.PaginatedResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get conversations
+      tags:
+      - Messages
+  /posts:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Create a new post with content and optional image
+      parameters:
+      - description: Post content
+        in: formData
+        name: content
+        required: true
+        type: string
+      - description: Image file
+        in: formData
+        name: image
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new post
+      tags:
+      - Posts
+  /posts/{id}:
+    delete:
+      description: Delete a post by its ID (must be the author)
+      parameters:
+      - description: Post ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete a post
+      tags:
+      - Posts
+    get:
+      description: Get a single post by its ID
+      parameters:
+      - description: Post ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Get post by ID
+      tags:
+      - Posts
+  /posts/{id}/comments:
+    get:
+      description: Get all comments for a specific post
+      parameters:
+      - description: Post ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Results per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.PaginatedResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Get comments by post
+      tags:
+      - Comments
+    post:
+      consumes:
+      - application/json
+      description: Add a comment to a post
+      parameters:
+      - description: Post ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Comment request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateCommentRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a comment
+      tags:
+      - Comments
+  /posts/{id}/like:
+    delete:
+      description: Remove a like from a post by its ID
+      parameters:
+      - description: Post ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Unlike a post
+      tags:
+      - Likes
+    post:
+      description: Like a post by its ID
+      parameters:
+      - description: Post ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Like a post
+      tags:
+      - Likes
+  /posts/{id}/likes:
+    get:
+      description: Get a list of users who liked a post
+      parameters:
+      - description: Post ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Results per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.PaginatedResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Get post likes
+      tags:
+      - Likes
+  /tags/{name}/posts:
+    get:
+      description: Get all posts associated with a specific tag
+      parameters:
+      - description: Tag name
+        in: path
+        name: name
+        required: true
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Results per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.PaginatedResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Get posts by tag
+      tags:
+      - Tags
+  /tags/trending:
+    get:
+      description: Get the top trending tags
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Get trending tags
+      tags:
+      - Tags
+  /timeline:
+    get:
+      description: Get the authenticated user's timeline feed with posts from followed
+        users
+      parameters:
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Results per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.PaginatedResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get timeline feed
+      tags:
+      - Timeline
+  /users/{username}:
+    get:
+      description: Get a user's public profile by username
+      parameters:
+      - description: Username
+        in: path
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Get user profile
+      tags:
+      - Users
+  /users/{username}/follow:
+    delete:
+      description: Unfollow a user by username
+      parameters:
+      - description: Username to unfollow
+        in: path
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Unfollow a user
+      tags:
+      - Follows
+    post:
+      description: Follow another user by username
+      parameters:
+      - description: Username to follow
+        in: path
+        name: username
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Follow a user
+      tags:
+      - Follows
+  /users/{username}/followers:
+    get:
+      description: Get a list of users following the specified user
+      parameters:
+      - description: Username
+        in: path
+        name: username
+        required: true
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Results per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.PaginatedResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Get followers
+      tags:
+      - Follows
+  /users/{username}/following:
+    get:
+      description: Get a list of users the specified user is following
+      parameters:
+      - description: Username
+        in: path
+        name: username
+        required: true
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Results per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.PaginatedResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Get following
+      tags:
+      - Follows
+  /users/{username}/posts:
+    get:
+      description: Get all posts by a specific user
+      parameters:
+      - description: Username
+        in: path
+        name: username
+        required: true
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Results per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.PaginatedResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Get posts by user
+      tags:
+      - Posts
+  /users/me:
+    put:
+      consumes:
+      - application/json
+      description: Update the authenticated user's profile
+      parameters:
+      - description: Update profile request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Update user profile
+      tags:
+      - Users
+securityDefinitions:
+  BearerAuth:
+    description: Enter "Bearer {token}" to authenticate
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

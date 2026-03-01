@@ -26,6 +26,11 @@ There are 3 main repositories for this project:
 ## Future Improvements
 - Markdown support for posting
 
+## Bugs
+- Removing reposts is not working well
+- Likes section in the profile is not working
+
+
 ## Tech Stack
 ### Backend
 - Golang
