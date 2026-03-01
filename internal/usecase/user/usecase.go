@@ -3,12 +3,13 @@
 package user
 
 import (
+	"github.com/CackSocial/cack-backend/internal/domain"
 	"github.com/CackSocial/cack-backend/internal/dto"
+	"github.com/CackSocial/cack-backend/internal/infrastructure/storage"
 	"github.com/CackSocial/cack-backend/internal/repository"
 	ucerrors "github.com/CackSocial/cack-backend/internal/usecase/errors"
 	"github.com/CackSocial/cack-backend/pkg/auth"
 	"github.com/CackSocial/cack-backend/pkg/hash"
-	"github.com/CackSocial/cack-backend/internal/domain"
 )
 
 // UserUseCase encapsulates all user-related business logic including
@@ -16,15 +17,17 @@ import (
 type UserUseCase struct {
 	userRepo   repository.UserRepository
 	followRepo repository.FollowRepository
+	storage    storage.Storage
 	jwtSecret  string
 	jwtExpiry  int
 }
 
 // NewUserUseCase creates a new UserUseCase with the given dependencies.
-func NewUserUseCase(userRepo repository.UserRepository, followRepo repository.FollowRepository, jwtSecret string, jwtExpiry int) *UserUseCase {
+func NewUserUseCase(userRepo repository.UserRepository, followRepo repository.FollowRepository, storage storage.Storage, jwtSecret string, jwtExpiry int) *UserUseCase {
 	return &UserUseCase{
 		userRepo:   userRepo,
 		followRepo: followRepo,
+		storage:    storage,
 		jwtSecret:  jwtSecret,
 		jwtExpiry:  jwtExpiry,
 	}
@@ -149,6 +152,18 @@ func (uc *UserUseCase) UpdateProfile(userID string, req *dto.UpdateProfileReques
 	user, err := uc.userRepo.GetByID(userID)
 	if err != nil || user == nil {
 		return nil, ucerrors.ErrUserNotFound
+	}
+
+	if req.Avatar != nil {
+		url, err := uc.storage.Upload(req.Avatar)
+		if err != nil {
+			return nil, err
+		}
+		oldAvatar := user.AvatarURL
+		user.AvatarURL = url
+		if oldAvatar != "" {
+			_ = uc.storage.Delete(oldAvatar)
+		}
 	}
 
 	if req.DisplayName != nil {

@@ -3,24 +3,36 @@
 package comment
 
 import (
+	"log"
+
 	"github.com/CackSocial/cack-backend/internal/domain"
 	"github.com/CackSocial/cack-backend/internal/dto"
 	"github.com/CackSocial/cack-backend/internal/repository"
 	ucerrors "github.com/CackSocial/cack-backend/internal/usecase/errors"
+	"github.com/CackSocial/cack-backend/pkg/mentions"
 )
+
+// NotificationCreator abstracts notification creation to avoid circular dependencies.
+type NotificationCreator interface {
+	CreateNotification(userID, actorID, notifType, referenceID, referenceType string) error
+}
 
 // CommentUseCase encapsulates all comment-related business logic including
 // creating comments, listing comments by post, and deleting comments.
 type CommentUseCase struct {
 	commentRepo repository.CommentRepository
 	postRepo    repository.PostRepository
+	userRepo    repository.UserRepository
+	notifCase   NotificationCreator
 }
 
 // NewCommentUseCase creates a new CommentUseCase with the given dependencies.
-func NewCommentUseCase(commentRepo repository.CommentRepository, postRepo repository.PostRepository) *CommentUseCase {
+func NewCommentUseCase(commentRepo repository.CommentRepository, postRepo repository.PostRepository, userRepo repository.UserRepository, notifCase NotificationCreator) *CommentUseCase {
 	return &CommentUseCase{
 		commentRepo: commentRepo,
 		postRepo:    postRepo,
+		userRepo:    userRepo,
+		notifCase:   notifCase,
 	}
 }
 
@@ -47,6 +59,24 @@ func (uc *CommentUseCase) Create(userID, postID string, req *dto.CreateCommentRe
 	created, err := uc.commentRepo.GetByID(comment.ID)
 	if err != nil {
 		return nil, err
+	}
+
+	// Notify the post owner (don't notify if commenting on own post)
+	if uc.notifCase != nil && post.UserID != userID {
+		_ = uc.notifCase.CreateNotification(post.UserID, userID, "comment", postID, "post")
+	}
+
+	// Send mention notifications
+	if uc.notifCase != nil {
+		for _, username := range mentions.ExtractMentions(req.Content) {
+			mentioned, err := uc.userRepo.GetByUsername(username)
+			if err != nil || mentioned == nil || mentioned.ID == userID {
+				continue
+			}
+			if err := uc.notifCase.CreateNotification(mentioned.ID, userID, "mention", postID, "post"); err != nil {
+				log.Printf("Failed to create mention notification for @%s: %v", username, err)
+			}
+		}
 	}
 
 	return toCommentResponse(created), nil

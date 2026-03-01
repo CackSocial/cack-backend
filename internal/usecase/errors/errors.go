@@ -17,7 +17,10 @@ var (
 
 // Post-related errors.
 var (
-	ErrPostNotFound = errors.New("post not found")
+	ErrPostNotFound    = errors.New("post not found")
+	ErrAlreadyReposted = errors.New("already reposted this post")
+	ErrRepostNotFound  = errors.New("repost not found")
+	ErrCannotRepost    = errors.New("cannot repost a repost")
 )
 
 // Follow-related errors.
@@ -39,4 +42,9 @@ var (
 // Bookmark-related errors.
 var (
 	ErrAlreadyBookmarked = errors.New("already bookmarked this post")
+)
+
+// Notification-related errors.
+var (
+	ErrNotificationNotFound = errors.New("notification not found")
 )

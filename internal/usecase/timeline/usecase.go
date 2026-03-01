@@ -60,13 +60,20 @@ func (uc *TimelineUseCase) GetFeed(userID string, page, limit int) ([]dto.PostRe
 		commentCount, _ := uc.commentRepo.CountByPostID(p.ID)
 		isLiked, _ := uc.likeRepo.IsLiked(userID, p.ID)
 		isBookmarked, _ := uc.bookmarkRepo.IsBookmarked(userID, p.ID)
+		repostCount, _ := uc.postRepo.CountReposts(p.ID)
+		isReposted, _ := uc.postRepo.IsReposted(userID, p.ID)
 
 		tagNames := make([]string, 0, len(p.Tags))
 		for _, t := range p.Tags {
 			tagNames = append(tagNames, t.Name)
 		}
 
-		responses = append(responses, dto.PostResponse{
+		postType := p.PostType
+		if postType == "" {
+			postType = "original"
+		}
+
+		resp := dto.PostResponse{
 			ID:       p.ID,
 			Content:  p.Content,
 			ImageURL: p.ImageURL,
@@ -78,12 +85,56 @@ func (uc *TimelineUseCase) GetFeed(userID string, page, limit int) ([]dto.PostRe
 				AvatarURL:   p.User.AvatarURL,
 			},
 			Tags:         tagNames,
+			PostType:     postType,
+			RepostCount:  repostCount,
+			IsReposted:   isReposted,
 			LikeCount:    likeCount,
 			CommentCount: commentCount,
 			IsLiked:      isLiked,
 			IsBookmarked: isBookmarked,
 			CreatedAt:    p.CreatedAt,
-		})
+		}
+
+		if p.OriginalPost != nil {
+			op := p.OriginalPost
+			opLikeCount, _ := uc.likeRepo.CountByPostID(op.ID)
+			opCommentCount, _ := uc.commentRepo.CountByPostID(op.ID)
+			opIsLiked, _ := uc.likeRepo.IsLiked(userID, op.ID)
+			opIsBookmarked, _ := uc.bookmarkRepo.IsBookmarked(userID, op.ID)
+			opRepostCount, _ := uc.postRepo.CountReposts(op.ID)
+			opIsReposted, _ := uc.postRepo.IsReposted(userID, op.ID)
+			opTagNames := make([]string, 0, len(op.Tags))
+			for _, t := range op.Tags {
+				opTagNames = append(opTagNames, t.Name)
+			}
+			opType := op.PostType
+			if opType == "" {
+				opType = "original"
+			}
+			resp.OriginalPost = &dto.PostResponse{
+				ID:       op.ID,
+				Content:  op.Content,
+				ImageURL: op.ImageURL,
+				Author: dto.UserProfile{
+					ID:          op.User.ID,
+					Username:    op.User.Username,
+					DisplayName: op.User.DisplayName,
+					Bio:         op.User.Bio,
+					AvatarURL:   op.User.AvatarURL,
+				},
+				Tags:         opTagNames,
+				PostType:     opType,
+				RepostCount:  opRepostCount,
+				IsReposted:   opIsReposted,
+				LikeCount:    opLikeCount,
+				CommentCount: opCommentCount,
+				IsLiked:      opIsLiked,
+				IsBookmarked: opIsBookmarked,
+				CreatedAt:    op.CreatedAt,
+			}
+		}
+
+		responses = append(responses, resp)
 	}
 
 	return responses, total, nil

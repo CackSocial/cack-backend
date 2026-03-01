@@ -9,20 +9,27 @@ import (
 	ucerrors "github.com/CackSocial/cack-backend/internal/usecase/errors"
 )
 
+// NotificationCreator abstracts notification creation to avoid circular dependencies.
+type NotificationCreator interface {
+	CreateNotification(userID, actorID, notifType, referenceID, referenceType string) error
+}
+
 // LikeUseCase encapsulates all like-related business logic including
 // liking, unliking, and retrieving the list of users who liked a post.
 type LikeUseCase struct {
-	likeRepo repository.LikeRepository
-	postRepo repository.PostRepository
-	userRepo repository.UserRepository
+	likeRepo  repository.LikeRepository
+	postRepo  repository.PostRepository
+	userRepo  repository.UserRepository
+	notifCase NotificationCreator
 }
 
 // NewLikeUseCase creates a new LikeUseCase with the given dependencies.
-func NewLikeUseCase(likeRepo repository.LikeRepository, postRepo repository.PostRepository, userRepo repository.UserRepository) *LikeUseCase {
+func NewLikeUseCase(likeRepo repository.LikeRepository, postRepo repository.PostRepository, userRepo repository.UserRepository, notifCase NotificationCreator) *LikeUseCase {
 	return &LikeUseCase{
-		likeRepo: likeRepo,
-		postRepo: postRepo,
-		userRepo: userRepo,
+		likeRepo:  likeRepo,
+		postRepo:  postRepo,
+		userRepo:  userRepo,
+		notifCase: notifCase,
 	}
 }
 
@@ -39,10 +46,19 @@ func (uc *LikeUseCase) Like(userID, postID string) error {
 		return ucerrors.ErrAlreadyLiked
 	}
 
-	return uc.likeRepo.Create(&domain.Like{
+	if err := uc.likeRepo.Create(&domain.Like{
 		UserID: userID,
 		PostID: postID,
-	})
+	}); err != nil {
+		return err
+	}
+
+	// Notify the post owner (don't notify if liking own post)
+	if uc.notifCase != nil && post.UserID != userID {
+		_ = uc.notifCase.CreateNotification(post.UserID, userID, "like", postID, "post")
+	}
+
+	return nil
 }
 
 // Unlike removes the like from the given user on the specified post.

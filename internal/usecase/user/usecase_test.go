@@ -2,6 +2,7 @@ package user
 
 import (
 	"errors"
+	"mime/multipart"
 	"testing"
 
 	"github.com/CackSocial/cack-backend/internal/domain"
@@ -119,12 +120,29 @@ func (m *mockFollowRepo) GetFollowingIDs(userID string) ([]string, error) {
 	return ids, nil
 }
 
+// --- Mock Storage ---
+
+type mockStorage struct {
+	uploaded string
+	deleted  string
+}
+
+func (m *mockStorage) Upload(file *multipart.FileHeader) (string, error) {
+	m.uploaded = file.Filename
+	return "/uploads/" + file.Filename, nil
+}
+
+func (m *mockStorage) Delete(filePath string) error {
+	m.deleted = filePath
+	return nil
+}
+
 // --- Tests ---
 
 func TestRegister_Success(t *testing.T) {
 	userRepo := newMockUserRepo()
 	followRepo := newMockFollowRepo()
-	uc := NewUserUseCase(userRepo, followRepo, "testsecret", 1)
+	uc := NewUserUseCase(userRepo, followRepo, &mockStorage{}, "testsecret", 1)
 
 	resp, err := uc.Register(&dto.RegisterRequest{
 		Username:    "testuser",
@@ -145,7 +163,7 @@ func TestRegister_Success(t *testing.T) {
 func TestRegister_DuplicateUsername(t *testing.T) {
 	userRepo := newMockUserRepo()
 	followRepo := newMockFollowRepo()
-	uc := NewUserUseCase(userRepo, followRepo, "testsecret", 1)
+	uc := NewUserUseCase(userRepo, followRepo, &mockStorage{}, "testsecret", 1)
 
 	_, err := uc.Register(&dto.RegisterRequest{
 		Username: "testuser",
@@ -167,7 +185,7 @@ func TestRegister_DuplicateUsername(t *testing.T) {
 func TestLogin_Success(t *testing.T) {
 	userRepo := newMockUserRepo()
 	followRepo := newMockFollowRepo()
-	uc := NewUserUseCase(userRepo, followRepo, "testsecret", 1)
+	uc := NewUserUseCase(userRepo, followRepo, &mockStorage{}, "testsecret", 1)
 
 	// First register the user.
 	hashed, _ := hash.HashPassword("password123")
@@ -192,7 +210,7 @@ func TestLogin_Success(t *testing.T) {
 func TestLogin_WrongPassword(t *testing.T) {
 	userRepo := newMockUserRepo()
 	followRepo := newMockFollowRepo()
-	uc := NewUserUseCase(userRepo, followRepo, "testsecret", 1)
+	uc := NewUserUseCase(userRepo, followRepo, &mockStorage{}, "testsecret", 1)
 
 	hashed, _ := hash.HashPassword("password123")
 	userRepo.users["user-1"] = &domain.User{
@@ -213,7 +231,7 @@ func TestLogin_WrongPassword(t *testing.T) {
 func TestLogin_NonExistentUser(t *testing.T) {
 	userRepo := newMockUserRepo()
 	followRepo := newMockFollowRepo()
-	uc := NewUserUseCase(userRepo, followRepo, "testsecret", 1)
+	uc := NewUserUseCase(userRepo, followRepo, &mockStorage{}, "testsecret", 1)
 
 	_, err := uc.Login(&dto.LoginRequest{
 		Username: "nouser",
@@ -227,7 +245,7 @@ func TestLogin_NonExistentUser(t *testing.T) {
 func TestGetProfile_Success(t *testing.T) {
 	userRepo := newMockUserRepo()
 	followRepo := newMockFollowRepo()
-	uc := NewUserUseCase(userRepo, followRepo, "testsecret", 1)
+	uc := NewUserUseCase(userRepo, followRepo, &mockStorage{}, "testsecret", 1)
 
 	userRepo.users["user-1"] = &domain.User{
 		ID:          "user-1",
@@ -254,7 +272,7 @@ func TestGetProfile_Success(t *testing.T) {
 func TestUpdateProfile_Success(t *testing.T) {
 	userRepo := newMockUserRepo()
 	followRepo := newMockFollowRepo()
-	uc := NewUserUseCase(userRepo, followRepo, "testsecret", 1)
+	uc := NewUserUseCase(userRepo, followRepo, &mockStorage{}, "testsecret", 1)
 
 	userRepo.users["user-1"] = &domain.User{
 		ID:          "user-1",

@@ -22,6 +22,9 @@ func (h *PostHandler) RegisterRoutes(public, protected *gin.RouterGroup, optiona
 	public.GET("/posts/:id", optionalAuth, h.GetByID)
 	protected.DELETE("/posts/:id", h.Delete)
 	public.GET("/users/:username/posts", optionalAuth, h.GetByUserID)
+	protected.POST("/posts/:id/repost", h.Repost)
+	protected.DELETE("/posts/:id/repost", h.DeleteRepost)
+	protected.POST("/posts/:id/quote", h.QuotePost)
 }
 
 // Create godoc
@@ -122,4 +125,83 @@ func (h *PostHandler) GetByUserID(c *gin.Context) {
 	}
 
 	response.Paginated(c, posts, page, limit, total)
+}
+
+// Repost godoc
+// @Summary Repost a post
+// @Description Create a repost of an existing post
+// @Tags Posts
+// @Produce json
+// @Param id path string true "Post ID"
+// @Success 201 {object} response.APIResponse
+// @Failure 400 {object} response.APIResponse
+// @Failure 404 {object} response.APIResponse
+// @Security BearerAuth
+// @Router /posts/{id}/repost [post]
+func (h *PostHandler) Repost(c *gin.Context) {
+	postID := c.Param("id")
+	userID := getUserID(c)
+
+	resp, err := h.postUseCase.Repost(userID, postID)
+	if err != nil {
+		handleError(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusCreated, resp)
+}
+
+// DeleteRepost godoc
+// @Summary Remove a repost
+// @Description Delete the authenticated user's repost of a post
+// @Tags Posts
+// @Produce json
+// @Param id path string true "Post ID"
+// @Success 200 {object} response.APIResponse
+// @Failure 404 {object} response.APIResponse
+// @Security BearerAuth
+// @Router /posts/{id}/repost [delete]
+func (h *PostHandler) DeleteRepost(c *gin.Context) {
+	postID := c.Param("id")
+	userID := getUserID(c)
+
+	if err := h.postUseCase.DeleteRepost(userID, postID); err != nil {
+		handleError(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, gin.H{"message": "repost removed"})
+}
+
+// QuotePost godoc
+// @Summary Quote a post
+// @Description Create a quote post with content referencing an existing post
+// @Tags Posts
+// @Accept multipart/form-data
+// @Produce json
+// @Param id path string true "Post ID"
+// @Param content formData string true "Quote content"
+// @Param image formData file false "Image file"
+// @Success 201 {object} response.APIResponse
+// @Failure 400 {object} response.APIResponse
+// @Failure 404 {object} response.APIResponse
+// @Security BearerAuth
+// @Router /posts/{id}/quote [post]
+func (h *PostHandler) QuotePost(c *gin.Context) {
+	postID := c.Param("id")
+	userID := getUserID(c)
+
+	var req dto.CreatePostRequest
+	if err := c.ShouldBind(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	resp, err := h.postUseCase.QuotePost(userID, postID, &req)
+	if err != nil {
+		handleError(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusCreated, resp)
 }

@@ -9,4 +9,7 @@ type PostRepository interface {
 	Delete(id string) error
 	GetFeed(userIDs []string, page, limit int) ([]domain.Post, int64, error)
 	GetByTagName(tagName string, page, limit int) ([]domain.Post, int64, error)
+	IsReposted(userID, postID string) (bool, error)
+	CountReposts(postID string) (int64, error)
+	GetRepostByUser(userID, postID string) (*domain.Post, error)
 }

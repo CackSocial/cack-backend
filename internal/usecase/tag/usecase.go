@@ -44,8 +44,8 @@ func (uc *TagUseCase) GetTrending(limit int) ([]repository.TrendingTag, error) {
 }
 
 // GetPostsByTag returns a paginated list of posts associated with the given
-// tag name. Each post includes like/comment counts and the liked status for
-// the current user.
+// tag name. Each post includes like/comment/repost counts and the liked status
+// for the current user.
 func (uc *TagUseCase) GetPostsByTag(tagName string, currentUserID string, page, limit int) ([]dto.PostResponse, int64, error) {
 	posts, total, err := uc.postRepo.GetByTagName(tagName, page, limit)
 	if err != nil {
@@ -58,6 +58,7 @@ func (uc *TagUseCase) GetPostsByTag(tagName string, currentUserID string, page, 
 
 		likeCount, _ := uc.likeRepo.CountByPostID(p.ID)
 		commentCount, _ := uc.commentRepo.CountByPostID(p.ID)
+		repostCount, _ := uc.postRepo.CountReposts(p.ID)
 
 		var isLiked bool
 		if currentUserID != "" {
@@ -69,12 +70,22 @@ func (uc *TagUseCase) GetPostsByTag(tagName string, currentUserID string, page, 
 			isBookmarked, _ = uc.bookmarkRepo.IsBookmarked(currentUserID, p.ID)
 		}
 
+		var isReposted bool
+		if currentUserID != "" {
+			isReposted, _ = uc.postRepo.IsReposted(currentUserID, p.ID)
+		}
+
 		tagNames := make([]string, 0, len(p.Tags))
 		for _, t := range p.Tags {
 			tagNames = append(tagNames, t.Name)
 		}
 
-		responses = append(responses, dto.PostResponse{
+		postType := p.PostType
+		if postType == "" {
+			postType = "original"
+		}
+
+		resp := dto.PostResponse{
 			ID:       p.ID,
 			Content:  p.Content,
 			ImageURL: p.ImageURL,
@@ -86,12 +97,65 @@ func (uc *TagUseCase) GetPostsByTag(tagName string, currentUserID string, page, 
 				AvatarURL:   p.User.AvatarURL,
 			},
 			Tags:         tagNames,
+			PostType:     postType,
+			RepostCount:  repostCount,
+			IsReposted:   isReposted,
 			LikeCount:    likeCount,
 			CommentCount: commentCount,
 			IsLiked:      isLiked,
 			IsBookmarked: isBookmarked,
 			CreatedAt:    p.CreatedAt,
-		})
+		}
+
+		if p.OriginalPost != nil {
+			op := p.OriginalPost
+			opLikeCount, _ := uc.likeRepo.CountByPostID(op.ID)
+			opCommentCount, _ := uc.commentRepo.CountByPostID(op.ID)
+			opRepostCount, _ := uc.postRepo.CountReposts(op.ID)
+			var opIsLiked bool
+			if currentUserID != "" {
+				opIsLiked, _ = uc.likeRepo.IsLiked(currentUserID, op.ID)
+			}
+			var opIsBookmarked bool
+			if currentUserID != "" {
+				opIsBookmarked, _ = uc.bookmarkRepo.IsBookmarked(currentUserID, op.ID)
+			}
+			var opIsReposted bool
+			if currentUserID != "" {
+				opIsReposted, _ = uc.postRepo.IsReposted(currentUserID, op.ID)
+			}
+			opTagNames := make([]string, 0, len(op.Tags))
+			for _, t := range op.Tags {
+				opTagNames = append(opTagNames, t.Name)
+			}
+			opType := op.PostType
+			if opType == "" {
+				opType = "original"
+			}
+			resp.OriginalPost = &dto.PostResponse{
+				ID:       op.ID,
+				Content:  op.Content,
+				ImageURL: op.ImageURL,
+				Author: dto.UserProfile{
+					ID:          op.User.ID,
+					Username:    op.User.Username,
+					DisplayName: op.User.DisplayName,
+					Bio:         op.User.Bio,
+					AvatarURL:   op.User.AvatarURL,
+				},
+				Tags:         opTagNames,
+				PostType:     opType,
+				RepostCount:  opRepostCount,
+				IsReposted:   opIsReposted,
+				LikeCount:    opLikeCount,
+				CommentCount: opCommentCount,
+				IsLiked:      opIsLiked,
+				IsBookmarked: opIsBookmarked,
+				CreatedAt:    op.CreatedAt,
+			}
+		}
+
+		responses = append(responses, resp)
 	}
 
 	return responses, total, nil

@@ -21,6 +21,7 @@ type Config struct {
 	UploadPath      string
 	MaxUploadSizeMB int
 	BaseURL         string
+	CORSOrigin      string
 }
 
 func LoadConfig() *Config {
@@ -39,6 +40,7 @@ func LoadConfig() *Config {
 		UploadPath:      getEnv("UPLOAD_PATH", "./uploads"),
 		MaxUploadSizeMB: getEnvAsInt("MAX_UPLOAD_SIZE_MB", 10),
 		BaseURL:         getEnv("BASE_URL", "http://localhost:8080"),
+		CORSOrigin:      getEnv("CORS_ORIGIN", "http://localhost:5173"),
 	}
 }
 

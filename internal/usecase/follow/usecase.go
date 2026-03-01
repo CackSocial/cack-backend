@@ -9,18 +9,25 @@ import (
 	ucerrors "github.com/CackSocial/cack-backend/internal/usecase/errors"
 )
 
+// NotificationCreator abstracts notification creation to avoid circular dependencies.
+type NotificationCreator interface {
+	CreateNotification(userID, actorID, notifType, referenceID, referenceType string) error
+}
+
 // FollowUseCase encapsulates all follow-related business logic including
 // following, unfollowing, and retrieving follower/following lists.
 type FollowUseCase struct {
 	followRepo repository.FollowRepository
 	userRepo   repository.UserRepository
+	notifCase  NotificationCreator
 }
 
 // NewFollowUseCase creates a new FollowUseCase with the given dependencies.
-func NewFollowUseCase(followRepo repository.FollowRepository, userRepo repository.UserRepository) *FollowUseCase {
+func NewFollowUseCase(followRepo repository.FollowRepository, userRepo repository.UserRepository, notifCase NotificationCreator) *FollowUseCase {
 	return &FollowUseCase{
 		followRepo: followRepo,
 		userRepo:   userRepo,
+		notifCase:  notifCase,
 	}
 }
 
@@ -41,10 +48,19 @@ func (uc *FollowUseCase) Follow(followerID string, username string) error {
 		return ucerrors.ErrAlreadyFollowing
 	}
 
-	return uc.followRepo.Create(&domain.Follow{
+	if err := uc.followRepo.Create(&domain.Follow{
 		FollowerID:  followerID,
 		FollowingID: target.ID,
-	})
+	}); err != nil {
+		return err
+	}
+
+	// Notify the followed user
+	if uc.notifCase != nil {
+		_ = uc.notifCase.CreateNotification(target.ID, followerID, "follow", followerID, "user")
+	}
+
+	return nil
 }
 
 // Unfollow removes the follow relationship between the authenticated user

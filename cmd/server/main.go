@@ -24,6 +24,7 @@ import (
 	timelineUC "github.com/CackSocial/cack-backend/internal/usecase/timeline"
 	userUC "github.com/CackSocial/cack-backend/internal/usecase/user"
 	bookmarkUC "github.com/CackSocial/cack-backend/internal/usecase/bookmark"
+	notificationUC "github.com/CackSocial/cack-backend/internal/usecase/notification"
 	"github.com/CackSocial/cack-backend/pkg/config"
 )
 
@@ -57,24 +58,30 @@ func main() {
 	commentRepo := repository.NewCommentRepository(db)
 	messageRepo := repository.NewMessageRepository(db)
 	bookmarkRepo := repository.NewBookmarkRepository(db)
+	notifRepo := repository.NewNotificationRepository(db)
 
 	// Initialize storage
 	localStorage := storage.NewLocalStorage(cfg.UploadPath, cfg.BaseURL)
 
 	// Initialize use cases
-	userUseCase := userUC.NewUserUseCase(userRepo, followRepo, cfg.JWTSecret, cfg.JWTExpiryHours)
-	postUseCase := postUC.NewPostUseCase(postRepo, tagRepo, likeRepo, commentRepo, userRepo, bookmarkRepo, localStorage)
-	followUseCase := followUC.NewFollowUseCase(followRepo, userRepo)
-	timelineUseCase := timelineUC.NewTimelineUseCase(followRepo, postRepo, likeRepo, commentRepo, bookmarkRepo)
-	likeUseCase := likeUC.NewLikeUseCase(likeRepo, postRepo, userRepo)
-	commentUseCase := commentUC.NewCommentUseCase(commentRepo, postRepo)
+	userUseCase := userUC.NewUserUseCase(userRepo, followRepo, localStorage, cfg.JWTSecret, cfg.JWTExpiryHours)
 	messageUseCase := messageUC.NewMessageUseCase(messageRepo, userRepo, localStorage)
 	tagUseCase := tagUC.NewTagUseCase(tagRepo, postRepo, likeRepo, commentRepo, bookmarkRepo)
 	bookmarkUseCase := bookmarkUC.NewBookmarkUseCase(bookmarkRepo, postRepo, likeRepo, commentRepo, userRepo)
 
-	// Initialize WebSocket hub and start it
+	// Initialize WebSocket hub and start it (needed before notification use case)
 	hub := ws.NewHub(messageUseCase)
 	go hub.Run()
+
+	// Initialize notification use case (depends on hub for real-time push)
+	notifUseCase := notificationUC.NewNotificationUseCase(notifRepo, userRepo, hub)
+
+	// Initialize use cases that depend on notifications
+	postUseCase := postUC.NewPostUseCase(postRepo, tagRepo, likeRepo, commentRepo, userRepo, bookmarkRepo, localStorage, notifUseCase)
+	followUseCase := followUC.NewFollowUseCase(followRepo, userRepo, notifUseCase)
+	timelineUseCase := timelineUC.NewTimelineUseCase(followRepo, postRepo, likeRepo, commentRepo, bookmarkRepo)
+	likeUseCase := likeUC.NewLikeUseCase(likeRepo, postRepo, userRepo, notifUseCase)
+	commentUseCase := commentUC.NewCommentUseCase(commentRepo, postRepo, userRepo, notifUseCase)
 
 	// Initialize handlers
 	userHandler := handler.NewUserHandler(userUseCase)
@@ -86,11 +93,12 @@ func main() {
 	messageHandler := handler.NewMessageHandler(messageUseCase)
 	tagHandler := handler.NewTagHandler(tagUseCase)
 	bookmarkHandler := handler.NewBookmarkHandler(bookmarkUseCase)
+	notifHandler := handler.NewNotificationHandler(notifUseCase)
 	wsHandler := ws.NewWSHandler(hub, cfg.JWTSecret)
 
 	// Setup Gin router
 	router := gin.Default()
-	router.Use(middleware.CORSMiddleware())
+	router.Use(middleware.CORSMiddleware(cfg.CORSOrigin))
 	// Static file serving
 	router.Static("/uploads", cfg.UploadPath)
 
@@ -101,6 +109,7 @@ func main() {
 	optionalAuth := middleware.OptionalAuth(cfg.JWTSecret)
 	protected := api.Group("")
 	protected.Use(middleware.AuthMiddleware(cfg.JWTSecret))
+	protected.Use(middleware.CSRFMiddleware())
 
 	// Register routes
 	userHandler.RegisterRoutes(public, protected, optionalAuth)
@@ -112,6 +121,7 @@ func main() {
 	messageHandler.RegisterRoutes(protected)
 	tagHandler.RegisterRoutes(public, optionalAuth)
 	bookmarkHandler.RegisterRoutes(protected)
+	notifHandler.RegisterNotificationRoutes(protected)
 	wsHandler.RegisterRoutes(router)
 
 	// Swagger documentation

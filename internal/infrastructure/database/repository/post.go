@@ -22,7 +22,9 @@ func (r *postRepository) Create(post *domain.Post) error {
 
 func (r *postRepository) GetByID(id string) (*domain.Post, error) {
 	var post domain.Post
-	if err := r.db.Preload("User").Preload("Tags").Where("id = ?", id).First(&post).Error; err != nil {
+	if err := r.db.Preload("User").Preload("Tags").
+		Preload("OriginalPost").Preload("OriginalPost.User").Preload("OriginalPost.Tags").
+		Where("id = ?", id).First(&post).Error; err != nil {
 		return nil, fmt.Errorf("post not found: %w", err)
 	}
 	return &post, nil
@@ -39,7 +41,9 @@ func (r *postRepository) GetByUserID(userID string, page, limit int) ([]domain.P
 	}
 
 	offset := (page - 1) * limit
-	if err := q.Preload("User").Preload("Tags").Order("created_at DESC").Offset(offset).Limit(limit).Find(&posts).Error; err != nil {
+	if err := q.Preload("User").Preload("Tags").
+		Preload("OriginalPost").Preload("OriginalPost.User").Preload("OriginalPost.Tags").
+		Order("created_at DESC").Offset(offset).Limit(limit).Find(&posts).Error; err != nil {
 		return nil, 0, err
 	}
 
@@ -65,7 +69,9 @@ func (r *postRepository) GetFeed(userIDs []string, page, limit int) ([]domain.Po
 	}
 
 	offset := (page - 1) * limit
-	if err := q.Preload("User").Preload("Tags").Order("created_at DESC").Offset(offset).Limit(limit).Find(&posts).Error; err != nil {
+	if err := q.Preload("User").Preload("Tags").
+		Preload("OriginalPost").Preload("OriginalPost.User").Preload("OriginalPost.Tags").
+		Order("created_at DESC").Offset(offset).Limit(limit).Find(&posts).Error; err != nil {
 		return nil, 0, err
 	}
 
@@ -86,9 +92,36 @@ func (r *postRepository) GetByTagName(tagName string, page, limit int) ([]domain
 	}
 
 	offset := (page - 1) * limit
-	if err := q.Preload("User").Preload("Tags").Order("posts.created_at DESC").Offset(offset).Limit(limit).Find(&posts).Error; err != nil {
+	if err := q.Preload("User").Preload("Tags").
+		Preload("OriginalPost").Preload("OriginalPost.User").Preload("OriginalPost.Tags").
+		Order("posts.created_at DESC").Offset(offset).Limit(limit).Find(&posts).Error; err != nil {
 		return nil, 0, err
 	}
 
 	return posts, total, nil
+}
+
+func (r *postRepository) IsReposted(userID, postID string) (bool, error) {
+	var count int64
+	err := r.db.Model(&domain.Post{}).
+		Where("user_id = ? AND original_post_id = ? AND post_type = 'repost'", userID, postID).
+		Count(&count).Error
+	return count > 0, err
+}
+
+func (r *postRepository) CountReposts(postID string) (int64, error) {
+	var count int64
+	err := r.db.Model(&domain.Post{}).
+		Where("original_post_id = ? AND (post_type = 'repost' OR post_type = 'quote')", postID).
+		Count(&count).Error
+	return count, err
+}
+
+func (r *postRepository) GetRepostByUser(userID, postID string) (*domain.Post, error) {
+	var post domain.Post
+	if err := r.db.Where("user_id = ? AND original_post_id = ? AND post_type = 'repost'", userID, postID).
+		First(&post).Error; err != nil {
+		return nil, fmt.Errorf("repost not found: %w", err)
+	}
+	return &post, nil
 }

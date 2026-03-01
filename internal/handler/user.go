@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/CackSocial/cack-backend/internal/dto"
+	"github.com/CackSocial/cack-backend/internal/middleware"
 	"github.com/CackSocial/cack-backend/internal/usecase/user"
 	"github.com/CackSocial/cack-backend/pkg/response"
 	"github.com/gin-gonic/gin"
@@ -20,10 +21,20 @@ func NewUserHandler(uc *user.UserUseCase) *UserHandler {
 func (h *UserHandler) RegisterRoutes(public, protected *gin.RouterGroup, optionalAuth gin.HandlerFunc) {
 	public.POST("/auth/register", h.Register)
 	public.POST("/auth/login", h.Login)
+	public.POST("/auth/logout", h.Logout)
 	public.GET("/users/:username", optionalAuth, h.GetProfile)
 
 	protected.PUT("/users/me", h.UpdateProfile)
 	protected.DELETE("/users/me", h.DeleteAccount)
+}
+
+// setAuthCookies sets the HttpOnly JWT cookie and the CSRF cookie on the response.
+func setAuthCookies(c *gin.Context, token string) {
+	c.SetSameSite(http.SameSiteStrictMode)
+	c.SetCookie("sc-token", token, 3600*24*7, "/", "", false, true)
+
+	csrfToken := middleware.GenerateCSRFToken()
+	c.SetCookie("sc-csrf", csrfToken, 3600*24*7, "/", "", false, false)
 }
 
 // Register godoc
@@ -50,6 +61,7 @@ func (h *UserHandler) Register(c *gin.Context) {
 		return
 	}
 
+	setAuthCookies(c, resp.Token)
 	response.Success(c, http.StatusCreated, resp)
 }
 
@@ -77,7 +89,22 @@ func (h *UserHandler) Login(c *gin.Context) {
 		return
 	}
 
+	setAuthCookies(c, resp.Token)
 	response.Success(c, http.StatusOK, resp)
+}
+
+// Logout godoc
+// @Summary Logout user
+// @Description Clear authentication cookies
+// @Tags Auth
+// @Produce json
+// @Success 200 {object} response.APIResponse
+// @Router /auth/logout [post]
+func (h *UserHandler) Logout(c *gin.Context) {
+	c.SetSameSite(http.SameSiteStrictMode)
+	c.SetCookie("sc-token", "", -1, "/", "", false, true)
+	c.SetCookie("sc-csrf", "", -1, "/", "", false, false)
+	response.Success(c, http.StatusOK, gin.H{"message": "logged out"})
 }
 
 // GetProfile godoc
@@ -104,11 +131,13 @@ func (h *UserHandler) GetProfile(c *gin.Context) {
 
 // UpdateProfile godoc
 // @Summary Update user profile
-// @Description Update the authenticated user's profile
+// @Description Update the authenticated user's profile (supports multipart form with avatar upload)
 // @Tags Users
-// @Accept json
+// @Accept multipart/form-data
 // @Produce json
-// @Param body body dto.UpdateProfileRequest true "Update profile request"
+// @Param display_name formData string false "Display name"
+// @Param bio formData string false "Bio"
+// @Param avatar formData file false "Avatar image"
 // @Success 200 {object} response.APIResponse
 // @Failure 400 {object} response.APIResponse
 // @Failure 401 {object} response.APIResponse
@@ -116,7 +145,7 @@ func (h *UserHandler) GetProfile(c *gin.Context) {
 // @Router /users/me [put]
 func (h *UserHandler) UpdateProfile(c *gin.Context) {
 	var req dto.UpdateProfileRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.ShouldBind(&req); err != nil {
 		response.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
