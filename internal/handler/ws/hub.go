@@ -42,7 +42,9 @@ func (h *Hub) Run() {
 			// Close existing connection if user reconnects
 			if existing, ok := h.clients[client.UserID]; ok {
 				close(existing.Send)
-				existing.Conn.Close()
+				if err := existing.Conn.Close(); err != nil {
+					log.Printf("failed to close existing connection: %v", err)
+				}
 			}
 			h.clients[client.UserID] = client
 			h.mu.Unlock()
@@ -82,7 +84,9 @@ func (h *Hub) SendToUser(userID string, data []byte) {
 func (h *Hub) ReadPump(client *Client) {
 	defer func() {
 		h.unregister <- client
-		client.Conn.Close()
+		if err := client.Conn.Close(); err != nil {
+			log.Printf("failed to close connection: %v", err)
+		}
 	}()
 
 	for {
@@ -111,7 +115,11 @@ func (h *Hub) ReadPump(client *Client) {
 
 // WritePump writes messages to the WebSocket connection.
 func (h *Hub) WritePump(client *Client) {
-	defer client.Conn.Close()
+	defer func() {
+		if err := client.Conn.Close(); err != nil {
+			log.Printf("failed to close connection: %v", err)
+		}
+	}()
 
 	for message := range client.Send {
 		if err := client.Conn.WriteMessage(websocket.TextMessage, message); err != nil {

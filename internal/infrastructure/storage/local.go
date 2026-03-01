@@ -48,7 +48,11 @@ func (s *localStorage) Upload(file *multipart.FileHeader) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to open file: %w", err)
 	}
-	defer src.Close()
+	defer func() {
+		if err := src.Close(); err != nil {
+			_ = err // read-only source; close error is non-critical
+		}
+	}()
 
 	// Detect MIME type from file content.
 	buf := make([]byte, 512)
@@ -73,7 +77,11 @@ func (s *localStorage) Upload(file *multipart.FileHeader) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to create destination file: %w", err)
 	}
-	defer dst.Close()
+	defer func() {
+		if err := dst.Close(); err != nil {
+			_ = err // close error logged by caller via io.Copy result
+		}
+	}()
 
 	if _, err := io.Copy(dst, src); err != nil {
 		return "", fmt.Errorf("failed to copy file: %w", err)

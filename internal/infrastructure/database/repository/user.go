@@ -62,7 +62,9 @@ func (r *userRepository) Delete(id string) error {
 		var postIDs []string
 		tx.Model(&domain.Post{}).Where("user_id = ?", id).Pluck("id", &postIDs)
 		for _, pid := range postIDs {
-			tx.Model(&domain.Post{ID: pid}).Association("Tags").Clear()
+			if err := tx.Model(&domain.Post{ID: pid}).Association("Tags").Clear(); err != nil {
+				return err
+			}
 		}
 		if err := tx.Where("user_id = ?", id).Delete(&domain.Post{}).Error; err != nil {
 			return err
