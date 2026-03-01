@@ -25,11 +25,14 @@ There are 3 main repositories for this project:
 
 ## Future Improvements
 - Markdown support for posting
+- Sharing multiple pictures in a post
+- Nested comments
+- Add like and share functionality to comments
 
 ## Bugs
 - Removing reposts is not working well
 - Likes section in the profile is not working
-
+- Direct messaging can not be used
 
 ## Tech Stack
 ### Backend
@@ -37,12 +40,12 @@ There are 3 main repositories for this project:
 - PostgreSQL
 - Docker for containerization
 - RESTful API for communication between frontend and backend
+- Websockets for direct messaging
 - JWT for authentication and authorization
 - GORM for ORM (Object-Relational Mapping)
 - Github Actions for CI/CD
 - Digital Ocean for image storage
 - Nginx for load balancing and reverse proxy
-- Prometheus and Grafana for monitoring and logging
 - Swagger for API documentation
 - Go Modules for dependency management
 - Go Test for unit testing
