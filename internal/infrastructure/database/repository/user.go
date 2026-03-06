@@ -107,7 +107,7 @@ func (r *userRepository) GetSuggestedUsers(currentUserID string, followingIDs []
 		remaining := limit - len(results)
 		existingIDs := make([]string, 0, len(results))
 		for _, r := range results {
-			existingIDs = append(existingIDs, r.User.ID)
+			existingIDs = append(existingIDs, r.ID)
 		}
 		excludeIDs := append(followingIDs, currentUserID)
 		excludeIDs = append(excludeIDs, existingIDs...)
