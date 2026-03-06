@@ -84,3 +84,19 @@ func (r *likeRepository) IsLiked(userID, postID string) (bool, error) {
 	}
 	return count > 0, nil
 }
+
+func (r *likeRepository) GetLikedTagNames(userID string, limit int) ([]string, error) {
+	var tagNames []string
+	err := r.db.Raw(`
+		SELECT DISTINCT t.name
+		FROM tags t
+		JOIN post_tags pt ON t.id = pt.tag_id
+		JOIN likes l ON l.post_id = pt.post_id
+		WHERE l.user_id = ?
+		LIMIT ?
+	`, userID, limit).Scan(&tagNames).Error
+	if err != nil {
+		return nil, err
+	}
+	return tagNames, nil
+}

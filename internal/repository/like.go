@@ -9,4 +9,5 @@ type LikeRepository interface {
 	GetLikedPostsByUserID(userID string, page, limit int) ([]domain.Post, int64, error)
 	CountByPostID(postID string) (int64, error)
 	IsLiked(userID, postID string) (bool, error)
+	GetLikedTagNames(userID string, limit int) ([]string, error)
 }

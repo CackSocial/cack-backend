@@ -77,6 +77,67 @@ func (r *userRepository) Delete(id string) error {
 	})
 }
 
+func (r *userRepository) GetSuggestedUsers(currentUserID string, followingIDs []string, limit int) ([]repository.SuggestedUser, error) {
+	type result struct {
+		domain.User
+		MutualCount int64
+	}
+	var results []result
+
+	if len(followingIDs) > 0 {
+		// Users followed by people I follow, but not me and not already followed
+		excludeIDs := append(followingIDs, currentUserID)
+		err := r.db.Raw(`
+			SELECT u.*, COUNT(DISTINCT f_mutual.follower_id) as mutual_count
+			FROM follows f_mutual
+			JOIN users u ON f_mutual.following_id = u.id
+			WHERE f_mutual.follower_id IN ?
+			  AND f_mutual.following_id NOT IN ?
+			GROUP BY u.id
+			ORDER BY mutual_count DESC
+			LIMIT ?
+		`, followingIDs, excludeIDs, limit).Scan(&results).Error
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Fallback: popular users by follower count if not enough mutual-based suggestions
+	if len(results) < limit {
+		remaining := limit - len(results)
+		existingIDs := make([]string, 0, len(results))
+		for _, r := range results {
+			existingIDs = append(existingIDs, r.User.ID)
+		}
+		excludeIDs := append(followingIDs, currentUserID)
+		excludeIDs = append(excludeIDs, existingIDs...)
+
+		var popular []result
+		q := r.db.Raw(`
+			SELECT u.*, COUNT(f.follower_id) as mutual_count
+			FROM users u
+			LEFT JOIN follows f ON f.following_id = u.id
+			WHERE u.id NOT IN ?
+			GROUP BY u.id
+			ORDER BY mutual_count DESC
+			LIMIT ?
+		`, excludeIDs, remaining)
+		if err := q.Scan(&popular).Error; err != nil {
+			return nil, err
+		}
+		results = append(results, popular...)
+	}
+
+	suggested := make([]repository.SuggestedUser, 0, len(results))
+	for _, r := range results {
+		suggested = append(suggested, repository.SuggestedUser{
+			User:        r.User,
+			MutualCount: r.MutualCount,
+		})
+	}
+	return suggested, nil
+}
+
 func (r *userRepository) Search(query string, page, limit int) ([]domain.User, int64, error) {
 	var users []domain.User
 	var total int64

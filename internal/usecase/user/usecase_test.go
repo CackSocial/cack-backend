@@ -7,6 +7,7 @@ import (
 
 	"github.com/CackSocial/cack-backend/internal/domain"
 	"github.com/CackSocial/cack-backend/internal/dto"
+	"github.com/CackSocial/cack-backend/internal/repository"
 	ucerrors "github.com/CackSocial/cack-backend/internal/usecase/errors"
 	"github.com/CackSocial/cack-backend/pkg/hash"
 )
@@ -53,6 +54,10 @@ func (m *mockUserRepo) Update(user *domain.User) error {
 
 func (m *mockUserRepo) Search(query string, page, limit int) ([]domain.User, int64, error) {
 	return nil, 0, nil
+}
+
+func (m *mockUserRepo) GetSuggestedUsers(currentUserID string, followingIDs []string, limit int) ([]repository.SuggestedUser, error) {
+	return nil, nil
 }
 
 func (m *mockUserRepo) Delete(id string) error {

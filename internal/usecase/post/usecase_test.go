@@ -90,6 +90,14 @@ func (m *mockPostRepo) GetRepostByUser(userID, postID string) (*domain.Post, err
 	return nil, errors.New("repost not found")
 }
 
+func (m *mockPostRepo) GetPopularPosts(excludeUserIDs []string, page, limit int, since time.Time) ([]domain.Post, int64, error) {
+	return nil, 0, nil
+}
+
+func (m *mockPostRepo) GetDiscoverPosts(tagNames []string, excludeUserIDs []string, page, limit int) ([]domain.Post, int64, error) {
+	return nil, 0, nil
+}
+
 // --- Mock TagRepository ---
 
 type mockTagRepo struct {
@@ -132,6 +140,9 @@ func (m *mockLikeRepo) CountByPostID(postID string) (int64, error) { return 0, n
 func (m *mockLikeRepo) IsLiked(userID, postID string) (bool, error) { return false, nil }
 func (m *mockLikeRepo) GetLikedPostsByUserID(userID string, page, limit int) ([]domain.Post, int64, error) {
 	return nil, 0, nil
+}
+func (m *mockLikeRepo) GetLikedTagNames(userID string, limit int) ([]string, error) {
+	return nil, nil
 }
 
 // --- Mock CommentRepository ---
@@ -196,6 +207,10 @@ func (m *mockUserRepo) Update(user *domain.User) error {
 
 func (m *mockUserRepo) Search(query string, page, limit int) ([]domain.User, int64, error) {
 	return nil, 0, nil
+}
+
+func (m *mockUserRepo) GetSuggestedUsers(currentUserID string, followingIDs []string, limit int) ([]repository.SuggestedUser, error) {
+	return nil, nil
 }
 
 func (m *mockUserRepo) Delete(id string) error {

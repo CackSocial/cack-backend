@@ -2,6 +2,11 @@ package repository
 
 import "github.com/CackSocial/cack-backend/internal/domain"
 
+type SuggestedUser struct {
+	User        domain.User
+	MutualCount int64
+}
+
 type UserRepository interface {
 	Create(user *domain.User) error
 	GetByID(id string) (*domain.User, error)
@@ -9,4 +14,5 @@ type UserRepository interface {
 	Update(user *domain.User) error
 	Delete(id string) error
 	Search(query string, page, limit int) ([]domain.User, int64, error)
+	GetSuggestedUsers(currentUserID string, followingIDs []string, limit int) ([]SuggestedUser, error)
 }
