@@ -21,6 +21,7 @@ var (
 	ErrAlreadyReposted = errors.New("already reposted this post")
 	ErrRepostNotFound  = errors.New("repost not found")
 	ErrCannotRepost    = errors.New("cannot repost a repost")
+	ErrContentRequired = errors.New("content is required")
 )
 
 // Follow-related errors.

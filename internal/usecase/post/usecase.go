@@ -309,7 +309,7 @@ func (uc *PostUseCase) QuotePost(userID, postID string, req *dto.CreatePostReque
 	}
 
 	if strings.TrimSpace(req.Content) == "" {
-		return nil, ucerrors.ErrPostNotFound // content required for quotes
+		return nil, ucerrors.ErrContentRequired
 	}
 
 	user, err := uc.userRepo.GetByID(userID)
