@@ -25,6 +25,7 @@ import (
 	userUC "github.com/CackSocial/cack-backend/internal/usecase/user"
 	bookmarkUC "github.com/CackSocial/cack-backend/internal/usecase/bookmark"
 	notificationUC "github.com/CackSocial/cack-backend/internal/usecase/notification"
+	exploreUC "github.com/CackSocial/cack-backend/internal/usecase/explore"
 	"github.com/CackSocial/cack-backend/pkg/config"
 )
 
@@ -80,6 +81,7 @@ func main() {
 	postUseCase := postUC.NewPostUseCase(postRepo, tagRepo, likeRepo, commentRepo, userRepo, bookmarkRepo, localStorage, notifUseCase)
 	followUseCase := followUC.NewFollowUseCase(followRepo, userRepo, notifUseCase)
 	timelineUseCase := timelineUC.NewTimelineUseCase(followRepo, postRepo, likeRepo, commentRepo, bookmarkRepo)
+	exploreUseCase := exploreUC.NewExploreUseCase(userRepo, postRepo, followRepo, likeRepo, commentRepo, bookmarkRepo)
 	likeUseCase := likeUC.NewLikeUseCase(likeRepo, postRepo, userRepo, commentRepo, bookmarkRepo, notifUseCase)
 	commentUseCase := commentUC.NewCommentUseCase(commentRepo, postRepo, userRepo, notifUseCase)
 
@@ -94,6 +96,7 @@ func main() {
 	tagHandler := handler.NewTagHandler(tagUseCase)
 	bookmarkHandler := handler.NewBookmarkHandler(bookmarkUseCase)
 	notifHandler := handler.NewNotificationHandler(notifUseCase)
+	exploreHandler := handler.NewExploreHandler(exploreUseCase)
 	wsHandler := ws.NewWSHandler(hub, cfg.JWTSecret)
 
 	// Setup Gin router
@@ -122,6 +125,7 @@ func main() {
 	tagHandler.RegisterRoutes(public, optionalAuth)
 	bookmarkHandler.RegisterRoutes(protected)
 	notifHandler.RegisterNotificationRoutes(protected)
+	exploreHandler.RegisterRoutes(protected)
 	wsHandler.RegisterRoutes(router)
 
 	// Swagger documentation
