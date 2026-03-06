@@ -8,6 +8,13 @@ definitions:
     required:
     - content
     type: object
+  dto.DeleteAccountRequest:
+    properties:
+      password:
+        type: string
+    required:
+    - password
+    type: object
   dto.LoginRequest:
     properties:
       password:
@@ -34,15 +41,6 @@ definitions:
     required:
     - password
     - username
-    type: object
-  dto.UpdateProfileRequest:
-    properties:
-      bio:
-        maxLength: 500
-        type: string
-      display_name:
-        maxLength: 100
-        type: string
     type: object
   response.APIResponse:
     properties:
@@ -102,6 +100,19 @@ paths:
       summary: Login user
       tags:
       - Auth
+  /auth/logout:
+    post:
+      description: Clear authentication cookies
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Logout user
+      tags:
+      - Auth
   /auth/register:
     post:
       consumes:
@@ -133,6 +144,34 @@ paths:
       summary: Register a new user
       tags:
       - Auth
+  /bookmarks:
+    get:
+      description: Get a paginated list of the authenticated user's bookmarked posts
+      parameters:
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Results per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.PaginatedResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get bookmarked posts
+      tags:
+      - Bookmarks
   /comments/{id}:
     delete:
       description: Delete a comment by its ID (must be the author)
@@ -162,6 +201,89 @@ paths:
       summary: Delete a comment
       tags:
       - Comments
+  /explore/discover:
+    get:
+      description: Returns posts matching tags from the user's liked posts, from users
+        outside their network
+      parameters:
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Results per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.PaginatedResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get discover feed
+      tags:
+      - Explore
+  /explore/popular:
+    get:
+      description: Returns high-engagement posts from outside the user's network,
+        limited to the last 7 days
+      parameters:
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Results per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.PaginatedResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get popular posts
+      tags:
+      - Explore
+  /explore/suggested-users:
+    get:
+      description: Returns users the current user might want to follow, ranked by
+        mutual followers with a fallback to popular users
+      parameters:
+      - description: Maximum number of suggestions (default 10)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get suggested users to follow
+      tags:
+      - Explore
   /messages/{username}:
     get:
       description: Get messages in a conversation with a specific user
@@ -270,6 +392,97 @@ paths:
       summary: Get conversations
       tags:
       - Messages
+  /notifications:
+    get:
+      description: Get a paginated list of notifications for the authenticated user
+      parameters:
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Results per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get notifications
+      tags:
+      - Notifications
+  /notifications/{id}/read:
+    put:
+      description: Mark a single notification as read
+      parameters:
+      - description: Notification ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Mark notification as read
+      tags:
+      - Notifications
+  /notifications/read-all:
+    put:
+      description: Mark all notifications as read for the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Mark all notifications as read
+      tags:
+      - Notifications
+  /notifications/unread-count:
+    get:
+      description: Get the number of unread notifications for the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Get unread notification count
+      tags:
+      - Notifications
   /posts:
     post:
       consumes:
@@ -356,6 +569,63 @@ paths:
       summary: Get post by ID
       tags:
       - Posts
+  /posts/{id}/bookmark:
+    delete:
+      description: Remove a post from the authenticated user's bookmarks
+      parameters:
+      - description: Post ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Remove bookmark from a post
+      tags:
+      - Bookmarks
+    post:
+      description: Add a post to the authenticated user's bookmarks
+      parameters:
+      - description: Post ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Bookmark a post
+      tags:
+      - Bookmarks
   /posts/{id}/comments:
     get:
       description: Get all comments for a specific post
@@ -519,6 +789,99 @@ paths:
       summary: Get post likes
       tags:
       - Likes
+  /posts/{id}/quote:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Create a quote post with content referencing an existing post
+      parameters:
+      - description: Post ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Quote content
+        in: formData
+        name: content
+        required: true
+        type: string
+      - description: Image file
+        in: formData
+        name: image
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Quote a post
+      tags:
+      - Posts
+  /posts/{id}/repost:
+    delete:
+      description: Delete the authenticated user's repost of a post
+      parameters:
+      - description: Post ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Remove a repost
+      tags:
+      - Posts
+    post:
+      description: Create a repost of an existing post
+      parameters:
+      - description: Post ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Repost a post
+      tags:
+      - Posts
   /tags/{name}/posts:
     get:
       description: Get all posts associated with a specific tag
@@ -742,6 +1105,37 @@ paths:
       summary: Get following
       tags:
       - Follows
+  /users/{username}/likes:
+    get:
+      description: Get a paginated list of posts that a user has liked
+      parameters:
+      - description: Username
+        in: path
+        name: username
+        required: true
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Results per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.PaginatedResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      summary: Get posts liked by a user
+      tags:
+      - Likes
   /users/{username}/posts:
     get:
       description: Get all posts by a specific user
@@ -774,17 +1168,54 @@ paths:
       tags:
       - Posts
   /users/me:
-    put:
+    delete:
       consumes:
       - application/json
-      description: Update the authenticated user's profile
+      description: Permanently delete the authenticated user's account and all associated
+        data
       parameters:
-      - description: Update profile request
+      - description: Password confirmation
         in: body
         name: body
         required: true
         schema:
-          $ref: '#/definitions/dto.UpdateProfileRequest'
+          $ref: '#/definitions/dto.DeleteAccountRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.APIResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete user account
+      tags:
+      - Users
+    put:
+      consumes:
+      - multipart/form-data
+      description: Update the authenticated user's profile (supports multipart form
+        with avatar upload)
+      parameters:
+      - description: Display name
+        in: formData
+        name: display_name
+        type: string
+      - description: Bio
+        in: formData
+        name: bio
+        type: string
+      - description: Avatar image
+        in: formData
+        name: avatar
+        type: file
       produces:
       - application/json
       responses:
