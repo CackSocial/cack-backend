@@ -58,16 +58,15 @@ func (r *userRepository) Delete(id string) error {
 		if err := tx.Where("user_id = ?", id).Delete(&domain.Comment{}).Error; err != nil {
 			return err
 		}
-		// Delete post_tags associations and posts
+		// Delete posts with all dependent rows that reference them.
 		var postIDs []string
-		tx.Model(&domain.Post{}).Where("user_id = ?", id).Pluck("id", &postIDs)
+		if err := tx.Model(&domain.Post{}).Where("user_id = ?", id).Pluck("id", &postIDs).Error; err != nil {
+			return err
+		}
 		for _, pid := range postIDs {
-			if err := tx.Model(&domain.Post{ID: pid}).Association("Tags").Clear(); err != nil {
+			if err := deletePostWithDependencies(tx, pid); err != nil {
 				return err
 			}
-		}
-		if err := tx.Where("user_id = ?", id).Delete(&domain.Post{}).Error; err != nil {
-			return err
 		}
 		// Delete follows
 		if err := tx.Where("follower_id = ? OR following_id = ?", id, id).Delete(&domain.Follow{}).Error; err != nil {

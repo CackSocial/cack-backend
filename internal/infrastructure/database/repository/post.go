@@ -51,11 +51,9 @@ func (r *postRepository) GetByUserID(userID string, page, limit int) ([]domain.P
 }
 
 func (r *postRepository) Delete(id string) error {
-	// Remove post_tags associations first
-	if err := r.db.Model(&domain.Post{ID: id}).Association("Tags").Clear(); err != nil {
-		return err
-	}
-	return r.db.Where("id = ?", id).Delete(&domain.Post{}).Error
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		return deletePostWithDependencies(tx, id)
+	})
 }
 
 func (r *postRepository) GetFeed(userIDs []string, page, limit int) ([]domain.Post, int64, error) {
