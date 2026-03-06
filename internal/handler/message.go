@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/CackSocial/cack-backend/internal/dto"
@@ -9,12 +10,18 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type MessageHandler struct {
-	messageUseCase *message.MessageUseCase
+// MessagePusher abstracts the WebSocket hub for real-time message delivery.
+type MessagePusher interface {
+	SendToUser(userID string, data []byte)
 }
 
-func NewMessageHandler(uc *message.MessageUseCase) *MessageHandler {
-	return &MessageHandler{messageUseCase: uc}
+type MessageHandler struct {
+	messageUseCase *message.MessageUseCase
+	hub            MessagePusher
+}
+
+func NewMessageHandler(uc *message.MessageUseCase, hub MessagePusher) *MessageHandler {
+	return &MessageHandler{messageUseCase: uc, hub: hub}
 }
 
 func (h *MessageHandler) RegisterRoutes(protected *gin.RouterGroup) {
@@ -103,6 +110,23 @@ func (h *MessageHandler) Send(c *gin.Context) {
 	if err != nil {
 		handleError(c, err)
 		return
+	}
+
+	// Push the new message to both parties in real-time via WebSocket.
+	if h.hub != nil {
+		wsPayload := map[string]interface{}{
+			"type":        "message",
+			"id":          resp.ID,
+			"sender_id":   resp.SenderID,
+			"receiver_id": resp.ReceiverID,
+			"content":     resp.Content,
+			"image_url":   resp.ImageURL,
+			"created_at":  resp.CreatedAt,
+		}
+		if data, err := json.Marshal(wsPayload); err == nil {
+			h.hub.SendToUser(resp.ReceiverID, data)
+			h.hub.SendToUser(userID, data)
+		}
 	}
 
 	response.Success(c, http.StatusCreated, resp)

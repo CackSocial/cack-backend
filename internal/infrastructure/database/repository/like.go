@@ -42,6 +42,33 @@ func (r *likeRepository) GetByPostID(postID string, page, limit int) ([]domain.U
 	return users, total, nil
 }
 
+func (r *likeRepository) GetLikedPostsByUserID(userID string, page, limit int) ([]domain.Post, int64, error) {
+	var posts []domain.Post
+	var total int64
+
+	q := r.db.Model(&domain.Post{}).
+		Joins("JOIN likes ON likes.post_id = posts.id").
+		Where("likes.user_id = ?", userID)
+
+	if err := q.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	offset := (page - 1) * limit
+	if err := r.db.
+		Joins("JOIN likes ON likes.post_id = posts.id").
+		Where("likes.user_id = ?", userID).
+		Preload("User").Preload("Tags").
+		Preload("OriginalPost").Preload("OriginalPost.User").Preload("OriginalPost.Tags").
+		Order("likes.created_at DESC").
+		Offset(offset).Limit(limit).
+		Find(&posts).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return posts, total, nil
+}
+
 func (r *likeRepository) CountByPostID(postID string) (int64, error) {
 	var count int64
 	if err := r.db.Model(&domain.Like{}).Where("post_id = ?", postID).Count(&count).Error; err != nil {

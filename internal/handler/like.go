@@ -16,10 +16,11 @@ func NewLikeHandler(uc *like.LikeUseCase) *LikeHandler {
 	return &LikeHandler{likeUseCase: uc}
 }
 
-func (h *LikeHandler) RegisterRoutes(public, protected *gin.RouterGroup) {
+func (h *LikeHandler) RegisterRoutes(public, protected *gin.RouterGroup, optionalAuth gin.HandlerFunc) {
 	protected.POST("/posts/:id/like", h.Like)
 	protected.DELETE("/posts/:id/like", h.Unlike)
 	public.GET("/posts/:id/likes", h.GetPostLikes)
+	public.GET("/users/:username/likes", optionalAuth, h.GetUserLikedPosts)
 }
 
 // Like godoc
@@ -91,4 +92,29 @@ func (h *LikeHandler) GetPostLikes(c *gin.Context) {
 	}
 
 	response.Paginated(c, users, page, limit, total)
+}
+
+// GetUserLikedPosts godoc
+// @Summary Get posts liked by a user
+// @Description Get a paginated list of posts that a user has liked
+// @Tags Likes
+// @Produce json
+// @Param username path string true "Username"
+// @Param page query int false "Page number"
+// @Param limit query int false "Results per page"
+// @Success 200 {object} response.PaginatedResponse
+// @Failure 404 {object} response.APIResponse
+// @Router /users/{username}/likes [get]
+func (h *LikeHandler) GetUserLikedPosts(c *gin.Context) {
+	username := c.Param("username")
+	currentUserID := getUserID(c)
+	page, limit := getPagination(c)
+
+	posts, total, err := h.likeUseCase.GetLikedPosts(username, currentUserID, page, limit)
+	if err != nil {
+		handleError(c, err)
+		return
+	}
+
+	response.Paginated(c, posts, page, limit, total)
 }

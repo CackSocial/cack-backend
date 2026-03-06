@@ -33,7 +33,7 @@ func (r *messageRepository) GetConversation(userID1, userID2 string, page, limit
 	}
 
 	offset := (page - 1) * limit
-	if err := q.Preload("Sender").Order("created_at DESC").Offset(offset).Limit(limit).Find(&messages).Error; err != nil {
+	if err := q.Preload("Sender").Order("created_at ASC").Offset(offset).Limit(limit).Find(&messages).Error; err != nil {
 		return nil, 0, err
 	}
 

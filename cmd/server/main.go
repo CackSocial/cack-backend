@@ -80,7 +80,7 @@ func main() {
 	postUseCase := postUC.NewPostUseCase(postRepo, tagRepo, likeRepo, commentRepo, userRepo, bookmarkRepo, localStorage, notifUseCase)
 	followUseCase := followUC.NewFollowUseCase(followRepo, userRepo, notifUseCase)
 	timelineUseCase := timelineUC.NewTimelineUseCase(followRepo, postRepo, likeRepo, commentRepo, bookmarkRepo)
-	likeUseCase := likeUC.NewLikeUseCase(likeRepo, postRepo, userRepo, notifUseCase)
+	likeUseCase := likeUC.NewLikeUseCase(likeRepo, postRepo, userRepo, commentRepo, bookmarkRepo, notifUseCase)
 	commentUseCase := commentUC.NewCommentUseCase(commentRepo, postRepo, userRepo, notifUseCase)
 
 	// Initialize handlers
@@ -90,7 +90,7 @@ func main() {
 	timelineHandler := handler.NewTimelineHandler(timelineUseCase)
 	likeHandler := handler.NewLikeHandler(likeUseCase)
 	commentHandler := handler.NewCommentHandler(commentUseCase)
-	messageHandler := handler.NewMessageHandler(messageUseCase)
+	messageHandler := handler.NewMessageHandler(messageUseCase, hub)
 	tagHandler := handler.NewTagHandler(tagUseCase)
 	bookmarkHandler := handler.NewBookmarkHandler(bookmarkUseCase)
 	notifHandler := handler.NewNotificationHandler(notifUseCase)
@@ -116,7 +116,7 @@ func main() {
 	postHandler.RegisterRoutes(public, protected, optionalAuth)
 	followHandler.RegisterRoutes(public, protected)
 	timelineHandler.RegisterRoutes(protected)
-	likeHandler.RegisterRoutes(public, protected)
+	likeHandler.RegisterRoutes(public, protected, optionalAuth)
 	commentHandler.RegisterRoutes(public, protected)
 	messageHandler.RegisterRoutes(protected)
 	tagHandler.RegisterRoutes(public, optionalAuth)

@@ -130,6 +130,9 @@ func (m *mockLikeRepo) GetByPostID(postID string, page, limit int) ([]domain.Use
 }
 func (m *mockLikeRepo) CountByPostID(postID string) (int64, error) { return 0, nil }
 func (m *mockLikeRepo) IsLiked(userID, postID string) (bool, error) { return false, nil }
+func (m *mockLikeRepo) GetLikedPostsByUserID(userID string, page, limit int) ([]domain.Post, int64, error) {
+	return nil, 0, nil
+}
 
 // --- Mock CommentRepository ---
 
