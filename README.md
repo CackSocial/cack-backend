@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🌐 SocialConnect Backend
+# 🌐 CackSocial Backend
 
 **A high-performance social networking API built with Go, PostgreSQL, and WebSockets**
 
