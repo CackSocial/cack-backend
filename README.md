@@ -6,7 +6,13 @@
 
 [![CI](https://github.com/CackSocial/cack-backend/actions/workflows/ci.yml/badge.svg)](https://github.com/CackSocial/cack-backend/actions/workflows/ci.yml)
 [![Go](https://img.shields.io/badge/Go-1.26-00ADD8?logo=go&logoColor=white)](https://go.dev/)
+[![Gin](https://img.shields.io/badge/Gin-1.10-00ADD8?logo=go&logoColor=white)](https://github.com/gin-gonic/gin)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![GORM](https://img.shields.io/badge/GORM-1.31-29BEB0?logo=go&logoColor=white)](https://gorm.io/)
+[![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
+[![Nginx](https://img.shields.io/badge/Nginx-009639?logo=nginx&logoColor=white)](https://nginx.org/)
+[![Swagger](https://img.shields.io/badge/Swagger-85EA2D?logo=swagger&logoColor=black)](https://swagger.io/)
+[![JWT](https://img.shields.io/badge/JWT-000000?logo=jsonwebtokens&logoColor=white)](https://jwt.io/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 Posts · Follows · Timeline · Direct Messaging · Likes · Comments · Bookmarks · Notifications · Trending Tags · Explore
@@ -98,23 +104,10 @@ Posts · Follows · Timeline · Direct Messaging · Likes · Comments · Bookmar
 
 This project follows **Clean Architecture** with strict layer boundaries. Dependencies always point inward—handlers depend on use cases, use cases depend on repository interfaces, and implementations depend on infrastructure.
 
-```
-┌─────────────────────────────────────────────────────┐
-│                   HTTP / WebSocket                  │
-│              (Gin Handlers + Middleware)            │
-├─────────────────────────────────────────────────────┤
-│                     Use Cases                       │
-│              (Business Logic Layer)                 │
-├─────────────────────────────────────────────────────┤
-│               Repository Interfaces                 │
-│             (Abstract Data Contracts)               │
-├─────────────────────────────────────────────────────┤
-│     Infrastructure (GORM + PostgreSQL + Storage)    │
-├─────────────────────────────────────────────────────┤
-│                  Domain Entities                    │
-│                (GORM Models, no deps)               │
-└─────────────────────────────────────────────────────┘
-```
+![Architectural Overview](README_images/ArchitecturalOverview.png)
+
+**Request Flow**
+![Request Flow](README_images/RequestFlow.png)
 
 ### Directory Structure
 
@@ -228,26 +221,6 @@ cack-backend/
 | **Handlers** | `internal/handler/` | Thin HTTP layer. Validates input → calls use case → returns response. |
 | **Middleware** | `internal/middleware/` | Cross-cutting: auth, CORS, CSRF. |
 | **Shared Packages** | `pkg/` | Reusable utilities: config, JWT, bcrypt, response formatting, mentions. |
-
-### Request Lifecycle
-
-```
-1. HTTP Request arrives
-   ↓
-2. Nginx proxies to Go app (port 8080)
-   ↓
-3. Gin middleware chain: CORS → Auth/OptionalAuth → CSRF
-   ↓
-4. Handler: validate input, extract userID from context
-   ↓
-5. Use Case: execute business logic using repository interfaces
-   ↓
-6. Repository Implementation: GORM queries against PostgreSQL
-   ↓
-7. Handler: format response using DTOs
-   ↓
-8. JSON response with standardized envelope: { success, data, message }
-```
 
 ### Dependency Injection Wiring
 
